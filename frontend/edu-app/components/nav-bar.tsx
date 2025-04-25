@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/lib/auth-context"
 
 // Enlaces de navegación
 const navLinks = [
@@ -67,6 +68,7 @@ const navLinks = [
 export default function NavBar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { user, isAuthenticated, logout } = useAuth()
 
   // Determinar si un enlace está activo
   const isActive = (path: string) => {
@@ -77,6 +79,22 @@ export default function NavBar() {
       return true
     }
     return false
+  }
+
+  // Manejar el cierre de sesión
+  const handleLogout = () => {
+    logout()
+  }
+
+  // Obtener iniciales del usuario para el avatar
+  const getUserInitials = () => {
+    if (!user || !user.name) return "U"
+    return user.name
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase()
   }
 
   return (
@@ -121,50 +139,57 @@ export default function NavBar() {
             <span className="font-medium">12</span>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar>
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Usuario" />
-                  <AvatarFallback>US</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Usuario</p>
-                  <p className="text-xs leading-none text-muted-foreground">usuario@ejemplo.com</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/perfil" className="flex w-full cursor-pointer">
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings" className="flex w-full cursor-pointer">
-                  <SettingsIcon className="mr-2 h-4 w-4" />
-                  <span>Configuración</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/admin" className="flex w-full cursor-pointer">
-                  <ShieldIcon className="mr-2 h-4 w-4" />
-                  <span>Panel de Administrador</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/login" className="flex w-full cursor-pointer text-red-500 hover:text-red-500">
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar>
+                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user?.name || "Usuario"} />
+                    <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name || "Usuario"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email || "usuario@ejemplo.com"}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/perfil" className="flex w-full cursor-pointer">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Perfil</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex w-full cursor-pointer">
+                    <SettingsIcon className="mr-2 h-4 w-4" />
+                    <span>Configuración</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin" className="flex w-full cursor-pointer">
+                    <ShieldIcon className="mr-2 h-4 w-4" />
+                    <span>Panel de Administrador</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-red-500 hover:text-red-500 cursor-pointer"
+                >
                   <LogOutIcon className="mr-2 h-4 w-4" />
                   <span>Cerrar sesión</span>
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button size="sm" asChild>
+              <Link href="/login">Iniciar Sesión</Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -188,18 +213,49 @@ export default function NavBar() {
               </Button>
             ))}
             <DropdownMenuSeparator className="my-2" />
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="justify-start text-sm"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Link href="/admin" className="flex items-center gap-2 py-2">
-                <ShieldIcon className="h-5 w-5" />
-                Panel de Administrador
-              </Link>
-            </Button>
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="justify-start text-sm"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Link href="/admin" className="flex items-center gap-2 py-2">
+                  <ShieldIcon className="h-5 w-5" />
+                  Panel de Administrador
+                </Link>
+              </Button>
+            )}
+            {isAuthenticated ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start text-sm text-red-500 hover:text-red-500"
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  handleLogout()
+                }}
+              >
+                <div className="flex items-center gap-2 py-2">
+                  <LogOutIcon className="h-5 w-5" />
+                  Cerrar sesión
+                </div>
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                size="sm"
+                asChild
+                className="justify-start text-sm mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Link href="/login" className="flex items-center gap-2 py-2">
+                  <UserIcon className="h-5 w-5" />
+                  Iniciar Sesión
+                </Link>
+              </Button>
+            )}
           </nav>
         </div>
       )}

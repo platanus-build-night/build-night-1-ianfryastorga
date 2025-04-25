@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -15,42 +15,50 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { User, Mail, Phone, MapPin, Calendar, BookOpen, Award, Clock, Shield, Bell, Upload } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
-// Datos de ejemplo del usuario
-const userData = {
-  id: "1",
-  name: "Carlos Rodríguez",
-  email: "carlos@ejemplo.com",
-  phone: "+34 612 345 678",
-  location: "Madrid, España",
-  bio: "Estudiante de ingeniería informática apasionado por la inteligencia artificial y el desarrollo web.",
+// Estructura para los datos extendidos del usuario
+interface ExtendedUserData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  bio: string;
+  avatar: string;
+  joinDate: string;
+  interests: string[];
+  education: {
+    institution: string;
+    degree: string;
+    year: string;
+  }[];
+  certificates: {
+    name: string;
+    issuer: string;
+    date: string;
+  }[];
+  preferences: {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    weeklyReports: boolean;
+    studyReminders: boolean;
+  };
+}
+
+// Datos iniciales por defecto
+const defaultUserData: ExtendedUserData = {
+  id: "",
+  name: "",
+  email: "",
+  phone: "",
+  location: "",
+  bio: "",
   avatar: "/placeholder.svg",
-  joinDate: "Enero 2023",
-  interests: ["Programación", "Matemáticas", "Inteligencia Artificial", "Diseño Web"],
-  education: [
-    {
-      institution: "Universidad Politécnica de Madrid",
-      degree: "Grado en Ingeniería Informática",
-      year: "2020 - Presente",
-    },
-    {
-      institution: "IES San Isidro",
-      degree: "Bachillerato Científico-Tecnológico",
-      year: "2018 - 2020",
-    },
-  ],
-  certificates: [
-    {
-      name: "Fundamentos de Python",
-      issuer: "EduApp",
-      date: "Marzo 2023",
-    },
-    {
-      name: "Desarrollo Web Frontend",
-      issuer: "EduApp",
-      date: "Mayo 2023",
-    },
-  ],
+  joinDate: "Reciente",
+  interests: [],
+  education: [],
+  certificates: [],
   preferences: {
     emailNotifications: true,
     pushNotifications: false,
@@ -62,9 +70,61 @@ const userData = {
 export default function PerfilPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [user, setUser] = useState(userData)
+  const { user: authUser, isAuthenticated, loading } = useAuth()
+  const [user, setUser] = useState<ExtendedUserData>(defaultUserData)
   const [isEditing, setIsEditing] = useState(false)
-  const [editedUser, setEditedUser] = useState(userData)
+  const [editedUser, setEditedUser] = useState<ExtendedUserData>(defaultUserData)
+
+  // Cargar datos del usuario cuando se autentique
+  useEffect(() => {
+    if (loading) return
+
+    if (!isAuthenticated) {
+      router.push("/login")
+      return
+    }
+
+    // Si el usuario está autenticado, obtenemos sus datos
+    // En una implementación real, aquí se haría una llamada a la API para obtener el perfil completo
+    if (authUser) {
+      // Simulación: Completamos con datos del perfil extendido
+      // En un caso real, estos datos vendrían de una llamada a la API
+      const extendedUserData: ExtendedUserData = {
+        id: authUser.id,
+        name: authUser.name || "Usuario",
+        email: authUser.email,
+        phone: "+34 612 345 678",
+        location: "Madrid, España",
+        bio: "Estudiante universitario apasionado por el aprendizaje constante.",
+        avatar: "/placeholder.svg",
+        joinDate: "Enero 2023", // Simularemos una fecha
+        interests: ["Programación", "Matemáticas", "Idiomas"],
+        education: [
+          {
+            institution: "Universidad Politécnica de Madrid",
+            degree: "Grado en Ingeniería Informática",
+            year: "2020 - Presente",
+          }
+        ],
+        certificates: [
+          {
+            name: "Fundamentos de Idiomas",
+            issuer: "UniLingo",
+            date: "Marzo 2023",
+          }
+        ],
+        preferences: {
+          emailNotifications: true,
+          pushNotifications: false,
+          weeklyReports: true,
+          studyReminders: true,
+        }
+      }
+      
+      setUser(extendedUserData)
+      setEditedUser(extendedUserData)
+    }
+  }, [authUser, isAuthenticated, loading, router])
 
   // Manejar cambios en los campos de edición
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -76,7 +136,7 @@ export default function PerfilPage() {
   }
 
   // Manejar cambios en las preferencias
-  const handlePreferenceChange = (key: keyof typeof userData.preferences, value: boolean) => {
+  const handlePreferenceChange = (key: keyof typeof user.preferences, value: boolean) => {
     setEditedUser({
       ...editedUser,
       preferences: {
@@ -88,6 +148,7 @@ export default function PerfilPage() {
 
   // Guardar cambios del perfil
   const handleSaveProfile = () => {
+    // En una implementación real, aquí se enviarían los datos al servidor
     setUser(editedUser)
     setIsEditing(false)
     toast({
@@ -101,6 +162,17 @@ export default function PerfilPage() {
   const handleCancelEdit = () => {
     setEditedUser(user)
     setIsEditing(false)
+  }
+
+  // Mostrar pantalla de carga mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="container py-8 flex justify-center items-center h-[50vh]">
+        <div className="text-center">
+          <p className="text-lg">Cargando perfil...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

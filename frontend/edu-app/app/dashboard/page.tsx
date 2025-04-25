@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CourseCard } from "@/components/course-card"
@@ -8,6 +9,7 @@ import { StreakFlame } from "@/components/streak-flame"
 import { CalendarDays, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
 
 // Datos de ejemplo
 const courses = [
@@ -60,8 +62,19 @@ const weeklyTips = [
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const { user, isAuthenticated, loading } = useAuth()
   const [streak, setStreak] = useState(7)
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
+
+  // Verificar autenticación
+  useEffect(() => {
+    if (loading) return
+    
+    if (!isAuthenticated) {
+      router.push("/login")
+    }
+  }, [isAuthenticated, loading, router])
 
   // Calcular días restantes para el examen (ejemplo)
   const examDate = new Date()
@@ -76,9 +89,22 @@ export default function DashboardPage() {
     setCurrentTipIndex((prev) => (prev - 1 + weeklyTips.length) % weeklyTips.length)
   }
 
+  // Mostrar pantalla de carga mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="container py-8 flex justify-center items-center h-[50vh]">
+        <div className="text-center">
+          <p className="text-lg">Cargando dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Tu Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        {user ? `¡Hola, ${user.name || 'Estudiante'}!` : 'Tu Dashboard'}
+      </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

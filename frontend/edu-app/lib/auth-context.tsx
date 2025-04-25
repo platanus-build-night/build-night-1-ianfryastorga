@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         variant: "success",
       });
       
+      // Redirigir al dashboard
       router.push("/dashboard");
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         variant: "success",
       });
       
+      // Redirigir directamente al dashboard sin pasar por onboarding
       router.push("/dashboard");
     } catch (error) {
       console.error("Error al registrar:", error);
