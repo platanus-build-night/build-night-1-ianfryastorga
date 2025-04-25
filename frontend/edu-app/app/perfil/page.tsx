@@ -12,6 +12,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
 import { User, Mail, Upload } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 // Estructura simplificada para los datos del usuario
 interface UserProfile {
@@ -32,10 +43,15 @@ const defaultUserData: UserProfile = {
 export default function PerfilPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { user: authUser, isAuthenticated, loading } = useAuth()
+  const { user: authUser, isAuthenticated, loading, logout } = useAuth()
   const [user, setUser] = useState<UserProfile>(defaultUserData)
   const [isEditing, setIsEditing] = useState(false)
   const [editedUser, setEditedUser] = useState<UserProfile>(defaultUserData)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
 
   // Cargar datos del usuario cuando se autentique
   useEffect(() => {
@@ -69,6 +85,15 @@ export default function PerfilPage() {
     })
   }
 
+  // Manejar cambios en los campos de contraseña
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPasswordData({
+      ...passwordData,
+      [name]: value,
+    })
+  }
+
   // Guardar cambios del perfil
   const handleSaveProfile = () => {
     // En una implementación real, aquí se enviarían los datos al servidor
@@ -79,6 +104,46 @@ export default function PerfilPage() {
       description: "Tus cambios han sido guardados correctamente.",
       variant: "success",
     })
+  }
+
+  // Actualizar contraseña
+  const handleUpdatePassword = () => {
+    // Validar que la nueva contraseña y la confirmación coincidan
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // En una implementación real, aquí se enviaría la petición al servidor
+    toast({
+      title: "Contraseña actualizada",
+      description: "Tu contraseña ha sido actualizada correctamente.",
+      variant: "success",
+    })
+
+    // Limpiar los campos
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    })
+  }
+
+  // Eliminar cuenta
+  const handleDeleteAccount = () => {
+    // En una implementación real, aquí se enviaría la petición al servidor
+    toast({
+      title: "Cuenta eliminada",
+      description: "Tu cuenta ha sido eliminada permanentemente.",
+      variant: "destructive",
+    })
+    
+    // Cerrar sesión y redirigir al inicio
+    logout()
   }
 
   // Cancelar edición
@@ -195,18 +260,62 @@ export default function PerfilPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="current-password">Contraseña actual</Label>
-              <Input id="current-password" type="password" />
+              <Input 
+                id="current-password" 
+                name="currentPassword"
+                type="password" 
+                value={passwordData.currentPassword}
+                onChange={handlePasswordChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-password">Nueva contraseña</Label>
-              <Input id="new-password" type="password" />
+              <Input 
+                id="new-password" 
+                name="newPassword"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={handlePasswordChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirmar nueva contraseña</Label>
-              <Input id="confirm-password" type="password" />
+              <Input 
+                id="confirm-password" 
+                name="confirmPassword"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={handlePasswordChange}
+              />
             </div>
-            <Button>Actualizar contraseña</Button>
+            <Button onClick={handleUpdatePassword}>Actualizar contraseña</Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Eliminar cuenta</CardTitle>
+          <CardDescription>Elimina permanentemente tu cuenta y toda tu información</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Eliminar mi cuenta</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta y todos tus datos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount}>Eliminar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>

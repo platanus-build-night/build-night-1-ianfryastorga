@@ -9,14 +9,12 @@ import {
   BarChartIcon,
   CalendarIcon,
   MessageSquareIcon,
-  SettingsIcon,
   MenuIcon,
   XIcon,
   InfoIcon,
   UserIcon,
   LogOutIcon,
   ShieldIcon,
-  ChevronDownIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -57,11 +55,6 @@ const navLinks = [
     name: "Sobre la App",
     href: "/about",
     icon: <InfoIcon className="h-5 w-5" />,
-  },
-  {
-    name: "Configuración",
-    href: "/settings",
-    icon: <SettingsIcon className="h-5 w-5" />,
   },
 ]
 
@@ -164,12 +157,6 @@ export default function NavBar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex w-full cursor-pointer">
-                    <SettingsIcon className="mr-2 h-4 w-4" />
-                    <span>Configuración</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link href="/admin" className="flex w-full cursor-pointer">
                     <ShieldIcon className="mr-2 h-4 w-4" />
                     <span>Panel de Administrador</span>
@@ -214,18 +201,32 @@ export default function NavBar() {
             ))}
             <DropdownMenuSeparator className="my-2" />
             {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="justify-start text-sm"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Link href="/admin" className="flex items-center gap-2 py-2">
-                  <ShieldIcon className="h-5 w-5" />
-                  Panel de Administrador
-                </Link>
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="justify-start text-sm"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Link href="/perfil" className="flex items-center gap-2 py-2">
+                    <UserIcon className="h-5 w-5" />
+                    Perfil
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="justify-start text-sm"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Link href="/admin" className="flex items-center gap-2 py-2">
+                    <ShieldIcon className="h-5 w-5" />
+                    Panel de Administrador
+                  </Link>
+                </Button>
+              </>
             )}
             {isAuthenticated ? (
               <Button
