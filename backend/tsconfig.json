@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    /* Lenguaje / entorno */
+    "target": "es2022",                  // Node 22 puede ejecutar ES 2022 nativo
+    "lib": ["es2022"],
+
+    /* Módulos */
+    "module": "commonjs",                // Express + ts-node-dev trabajan bien en CJS
+    "moduleResolution": "node",
+
+    /* Directorios */
+    "rootDir": "src",
+    "outDir": "dist",
+
+    /* Decoradores (requerido por TypeORM) */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    /* Interoperabilidad */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Chequeos estrictos */
+    "strict": true,
+    "skipLibCheck": true                 // acelera la compilación en dev
+
+    /* Sin otras opciones duplicadas */
+  },
+  "include": ["src/**/*"]
+}
