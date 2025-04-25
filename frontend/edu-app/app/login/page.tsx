@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Github, Mail, ArrowRight } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { toast } = useToast()
+  const { login, loading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
 
   // Estados para formulario de login
@@ -26,29 +26,25 @@ export default function LoginPage() {
   })
 
   // Manejar envío de formulario de login
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Aquí iría la lógica de autenticación real
-    // Por ahora, simulamos un login exitoso
-
-    toast({
-      title: "Inicio de sesión exitoso",
-      description: "Bienvenido de nuevo a UniLingo",
-      variant: "success",
-    })
-
-    // Redirigir al dashboard
-    router.push("/dashboard")
+    
+    try {
+      await login({
+        email: loginData.email,
+        password: loginData.password,
+      })
+      // La redirección se maneja en el contexto de autenticación
+    } catch (error) {
+      // Los errores se manejan en el contexto de autenticación
+      console.error("Error en formulario:", error)
+    }
   }
 
   // Manejar login con proveedores externos
   const handleProviderLogin = (provider: string) => {
-    // Aquí iría la lógica de autenticación con proveedores
-    toast({
-      title: `Iniciando sesión con ${provider}`,
-      description: "Redirigiendo al proveedor de autenticación",
-    })
+    // Esta funcionalidad requeriría implementación adicional para OAuth
+    console.log(`Iniciando sesión con ${provider}`)
   }
 
   return (
@@ -110,8 +106,8 @@ export default function LoginPage() {
               </Label>
             </div>
             <div className="space-y-2">
-              <Button type="submit" className="w-full">
-                Iniciar Sesión
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </div>
             <div className="relative">
@@ -123,11 +119,11 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" type="button" onClick={() => handleProviderLogin("Google")}>
+              <Button variant="outline" type="button" onClick={() => handleProviderLogin("Google")} disabled={loading}>
                 <Mail className="mr-2 h-4 w-4" />
                 Google
               </Button>
-              <Button variant="outline" type="button" onClick={() => handleProviderLogin("GitHub")}>
+              <Button variant="outline" type="button" onClick={() => handleProviderLogin("GitHub")} disabled={loading}>
                 <Github className="mr-2 h-4 w-4" />
                 GitHub
               </Button>

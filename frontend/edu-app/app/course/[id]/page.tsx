@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { SetCard } from "@/components/set-card"
 import { ChevronLeft, BookOpen } from "lucide-react"
+import React from "react"
 
 // Datos de ejemplo
 const coursesData = {
@@ -87,7 +88,9 @@ const coursesData = {
 }
 
 export default function CoursePage({ params }: { params: { id: string } }) {
-  const courseId = params.id
+  // Usando React.use() para desenvolver los params (solución al warning)
+  const unwrappedParams = React.use(params);
+  const courseId = unwrappedParams.id;
   const course = coursesData[courseId as keyof typeof coursesData]
 
   if (!course) {

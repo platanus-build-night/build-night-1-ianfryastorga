@@ -15,6 +15,7 @@ import { CalendarIcon, CheckCircle2, Mail, Apple } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 
 const courses = [
   { id: "math", name: "Matemáticas", description: "Álgebra, cálculo y estadísticas" },
@@ -27,6 +28,7 @@ const courses = [
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { register, loading } = useAuth()
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     email: "",
@@ -37,6 +39,8 @@ export default function OnboardingPage() {
     password: "",
     acceptTerms: false,
   })
+  
+  const [registerError, setRegisterError] = useState("")
 
   const handleCourseToggle = (courseId: string) => {
     setFormData((prev) => {
@@ -50,7 +54,35 @@ export default function OnboardingPage() {
     })
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (step === 2) {
+      // Validar formulario de registro
+      if (!formData.name || !formData.email || !formData.password) {
+        setRegisterError("Por favor completa todos los campos obligatorios")
+        return
+      }
+      
+      if (!formData.acceptTerms) {
+        setRegisterError("Debes aceptar los términos y condiciones")
+        return
+      }
+      
+      try {
+        // Registrar usuario
+        await register({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        })
+        // La redirección se maneja en el contexto de autenticación
+        return
+      } catch (error) {
+        console.error("Error al registrar:", error)
+        setRegisterError(error instanceof Error ? error.message : "No se pudo crear la cuenta")
+        return
+      }
+    }
+    
     if (step < 5) {
       setStep(step + 1)
     } else {
@@ -89,6 +121,11 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-4 w-full max-w-md">
             <h2 className="text-2xl font-bold text-center">Crea tu cuenta</h2>
+            {registerError && (
+              <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
+                {registerError}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="name">Nombre completo</Label>
               <Input
@@ -240,26 +277,15 @@ export default function OnboardingPage() {
         )
 
       case 5:
+      default:
         return (
           <div className="flex flex-col items-center space-y-6 text-center">
             <div className="h-40 w-40 rounded-full bg-primary/10 flex items-center justify-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-20 w-20 text-primary"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
+              <CheckCircle2 className="h-20 w-20 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold">¡Todo listo!</h1>
+            <h1 className="text-2xl font-bold">¡Configuración completa!</h1>
             <p className="text-muted-foreground max-w-md">
-              Tu cuenta ha sido configurada correctamente. Estás listo para comenzar tu viaje de aprendizaje.
+              Gracias por configurar tu cuenta. Ahora puedes comenzar a aprender a tu propio ritmo.
             </p>
           </div>
         )
@@ -267,25 +293,42 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)] py-8">
-      <Card className="w-full max-w-3xl">
+    <div className="container max-w-5xl mx-auto min-h-screen flex items-center justify-center py-8">
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-center">Paso {step} de 5</CardTitle>
-          <CardDescription className="text-center">
-            <div className="w-full bg-muted h-2 rounded-full mt-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all duration-200"
-                style={{ width: `${(step / 5) * 100}%` }}
-              />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-2 w-10 rounded-full transition-colors",
+                    i < step ? "bg-primary" : "bg-muted",
+                  )}
+                />
+              ))}
             </div>
-          </CardDescription>
+            <span className="text-sm text-muted-foreground">
+              Paso {step} de 5
+            </span>
+          </div>
         </CardHeader>
-        <CardContent className="flex justify-center py-6">{renderStep()}</CardContent>
+        <CardContent className="pb-12 flex justify-center">
+          {renderStep()}
+        </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => step > 1 && setStep(step - 1)} disabled={step === 1}>
-            Atrás
+          {step > 1 ? (
+            <Button variant="outline" onClick={() => setStep(step - 1)} disabled={loading}>
+              Anterior
+            </Button>
+          ) : (
+            <Button variant="outline" asChild>
+              <Link href="/login">Volver a inicio de sesión</Link>
+            </Button>
+          )}
+          <Button onClick={handleNext} disabled={loading}>
+            {loading ? "Procesando..." : step === 5 ? "Finalizar" : "Siguiente"}
           </Button>
-          <Button onClick={handleNext}>{step < 5 ? "Siguiente" : "¡Comenzar!"}</Button>
         </CardFooter>
       </Card>
     </div>
