@@ -249,7 +249,7 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 mb-6">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -338,47 +338,6 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center text-center space-y-2">
-              <div className="p-3 bg-primary/10 rounded-full">
-                <UserPlus className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold">Crear Usuario</h3>
-              <p className="text-sm text-muted-foreground">Añade un nuevo usuario a la plataforma</p>
-              <Button className="mt-2 w-full">Crear Usuario</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center text-center space-y-2">
-              <div className="p-3 bg-primary/10 rounded-full">
-                <BookOpenCheck className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold">Crear Curso</h3>
-              <p className="text-sm text-muted-foreground">Añade un nuevo curso a la plataforma</p>
-              <Button className="mt-2 w-full">Crear Curso</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center text-center space-y-2">
-              <div className="p-3 bg-primary/10 rounded-full">
-                <Trophy className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold">Crear Logro</h3>
-              <p className="text-sm text-muted-foreground">Añade un nuevo logro a la plataforma</p>
-              <Button className="mt-2 w-full">Crear Logro</Button>
             </div>
           </CardContent>
         </Card>

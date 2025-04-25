@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BookOpen, ChevronDown, Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 // Datos de ejemplo para cursos
 const coursesData = [
@@ -172,87 +173,12 @@ export default function AdminCourses() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Gestión de Cursos</h1>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Curso
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Curso</DialogTitle>
-              <DialogDescription>Completa los detalles para crear un nuevo curso.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title">Título del curso</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={newCourse.title}
-                  onChange={handleInputChange}
-                  placeholder="Ej: Matemáticas Básicas"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={newCourse.description}
-                  onChange={handleInputChange}
-                  placeholder="Breve descripción del curso..."
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="difficulty">Nivel de dificultad</Label>
-                  <Select
-                    value={newCourse.difficulty}
-                    onValueChange={(value) => handleSelectChange("difficulty", value)}
-                  >
-                    <SelectTrigger id="difficulty">
-                      <SelectValue placeholder="Selecciona dificultad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Principiante</SelectItem>
-                      <SelectItem value="intermediate">Intermedio</SelectItem>
-                      <SelectItem value="advanced">Avanzado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="color">Color del curso</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="color"
-                      name="color"
-                      type="color"
-                      value={newCourse.color}
-                      onChange={handleInputChange}
-                      className="w-12 h-10 p-1"
-                    />
-                    <Input
-                      value={newCourse.color}
-                      onChange={handleInputChange}
-                      name="color"
-                      className="flex-1"
-                      placeholder="#2065D1"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCreateCourse}>Crear Curso</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Link href="/admin/cursos/crear">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Curso
+          </Button>
+        </Link>
       </div>
 
       <Card className="mb-6">

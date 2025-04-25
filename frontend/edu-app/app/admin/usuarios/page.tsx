@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChevronDown, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, UserCog } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 // Datos de ejemplo para usuarios
 const usersData = [
@@ -174,73 +175,12 @@ export default function AdminUsers() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Usuario
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-              <DialogDescription>Completa los detalles para crear un nuevo usuario.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nombre completo</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={newUser.name}
-                  onChange={handleInputChange}
-                  placeholder="Ej: Ana García"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Correo electrónico</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={handleInputChange}
-                  placeholder="usuario@ejemplo.com"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={newUser.password}
-                  onChange={handleInputChange}
-                  placeholder="••••••••"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Rol</Label>
-                <Select value={newUser.role} onValueChange={(value) => handleSelectChange("role", value)}>
-                  <SelectTrigger id="role">
-                    <SelectValue placeholder="Selecciona rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Estudiante</SelectItem>
-                    <SelectItem value="teacher">Profesor</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCreateUser}>Crear Usuario</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Link href="/admin/usuarios/crear">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Usuario
+          </Button>
+        </Link>
       </div>
 
       <Card className="mb-6">
