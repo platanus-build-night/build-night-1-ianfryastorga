@@ -13,10 +13,22 @@ import {
   MenuIcon,
   XIcon,
   InfoIcon,
+  UserIcon,
+  LogOutIcon,
+  ShieldIcon,
+  ChevronDownIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { StreakFlame } from "@/components/streak-flame"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Enlaces de navegación
 const navLinks = [
@@ -109,10 +121,50 @@ export default function NavBar() {
             <span className="font-medium">12</span>
           </div>
 
-          <Avatar>
-            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Usuario" />
-            <AvatarFallback>US</AvatarFallback>
-          </Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar>
+                  <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Usuario" />
+                  <AvatarFallback>US</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">Usuario</p>
+                  <p className="text-xs leading-none text-muted-foreground">usuario@ejemplo.com</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/perfil" className="flex w-full cursor-pointer">
+                  <UserIcon className="mr-2 h-4 w-4" />
+                  <span>Perfil</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex w-full cursor-pointer">
+                  <SettingsIcon className="mr-2 h-4 w-4" />
+                  <span>Configuración</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin" className="flex w-full cursor-pointer">
+                  <ShieldIcon className="mr-2 h-4 w-4" />
+                  <span>Panel de Administrador</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/login" className="flex w-full cursor-pointer text-red-500 hover:text-red-500">
+                  <LogOutIcon className="mr-2 h-4 w-4" />
+                  <span>Cerrar sesión</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -135,6 +187,19 @@ export default function NavBar() {
                 </Link>
               </Button>
             ))}
+            <DropdownMenuSeparator className="my-2" />
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="justify-start text-sm"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Link href="/admin" className="flex items-center gap-2 py-2">
+                <ShieldIcon className="h-5 w-5" />
+                Panel de Administrador
+              </Link>
+            </Button>
           </nav>
         </div>
       )}
