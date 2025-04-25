@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 
 export const metadata: Metadata = {
-  title: "Panel de Administración | EduApp",
-  description: "Panel de administración para gestionar cursos, usuarios y contenido de EduApp",
+  title: "Panel de Administración | UniLingo",
+  description: "Panel de administración para gestionar cursos, usuarios y contenido de UniLingo",
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

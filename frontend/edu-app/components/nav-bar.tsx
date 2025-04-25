@@ -80,7 +80,7 @@ export default function NavBar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <BookOpenIcon className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl hidden sm:inline-block">EduApp</span>
+            <span className="font-bold text-xl hidden sm:inline-block">UniLingo</span>
           </Link>
 
           {/* Navegación de escritorio */}

@@ -97,7 +97,7 @@ export function AdminSidebar() {
         <Button variant="outline" className="w-full justify-start gap-2" asChild>
           <Link href="/dashboard">
             <LayoutDashboard className="h-5 w-5" />
-            Volver a EduApp
+            Volver a UniLingo
           </Link>
         </Button>
       </div>

@@ -45,7 +45,7 @@ export default function LoginPage() {
 
     toast({
       title: "Inicio de sesión exitoso",
-      description: "Bienvenido de nuevo a EduApp",
+      description: "Bienvenido de nuevo a UniLingo",
       variant: "success",
     })
 

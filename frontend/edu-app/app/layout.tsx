@@ -9,7 +9,7 @@ import NavBar from "@/components/nav-bar"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "EduApp - Aprende a tu ritmo",
+  title: "UniLingo - Aprende a tu ritmo",
   description: "Plataforma educativa moderna para aprender a tu propio ritmo",
     generator: 'v0.dev'
 }
