@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
-import { CalendarIcon, CheckCircle2 } from "lucide-react"
+import { CalendarIcon, CheckCircle2, Mail, Apple } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -32,6 +33,9 @@ export default function OnboardingPage() {
     selectedCourses: [] as string[],
     examDate: undefined as Date | undefined,
     whatsappReminders: false,
+    name: "",
+    password: "",
+    acceptTerms: false,
   })
 
   const handleCourseToggle = (courseId: string) => {
@@ -86,6 +90,16 @@ export default function OnboardingPage() {
           <div className="space-y-4 w-full max-w-md">
             <h2 className="text-2xl font-bold text-center">Crea tu cuenta</h2>
             <div className="space-y-2">
+              <Label htmlFor="name">Nombre completo</Label>
+              <Input
+                id="name"
+                placeholder="Juan Pérez"
+                value={formData.name || ""}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
               <Input
                 id="email"
@@ -93,14 +107,53 @@ export default function OnboardingPage() {
                 placeholder="tu@ejemplo.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
               />
             </div>
-            <div className="flex justify-center gap-4 mt-6">
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password || ""}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Usa al menos 8 caracteres con letras, números y símbolos
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 mt-4">
+              <Checkbox
+                id="terms"
+                checked={formData.acceptTerms || false}
+                onCheckedChange={(checked) => setFormData({ ...formData, acceptTerms: checked as boolean })}
+                required
+              />
+              <Label htmlFor="terms" className="text-sm">
+                Acepto los{" "}
+                <Link href="/terms" className="text-primary hover:underline">
+                  términos y condiciones
+                </Link>
+              </Label>
+            </div>
+            <div className="relative mt-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
+              </div>
+            </div>
+            <div className="flex justify-center gap-4 mt-4">
               <Button variant="outline" onClick={() => setFormData({ ...formData, email: "google@example.com" })}>
-                Continuar con Google
+                <Mail className="mr-2 h-4 w-4" />
+                Google
               </Button>
               <Button variant="outline" onClick={() => setFormData({ ...formData, email: "apple@example.com" })}>
-                Continuar con Apple
+                <Apple className="mr-2 h-4 w-4" />
+                Apple
               </Button>
             </div>
           </div>
