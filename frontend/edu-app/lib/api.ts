@@ -46,6 +46,93 @@ export interface CreateCourseDto {
   is_published?: boolean;
 }
 
+// Tipos para conjuntos (sets)
+export interface Set {
+  id: number;
+  courseId: number;
+  title: string;
+  description: string;
+  orderIndex: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateSetDto {
+  course_id: number;
+  title: string;
+  description: string;
+  order_index?: number;
+}
+
+export interface UpdateSetDto {
+  title?: string;
+  description?: string;
+  order_index?: number;
+}
+
+// Tipos para niveles (levels)
+export interface Level {
+  id: number;
+  setId: number;
+  title: string;
+  description: string;
+  orderIndex: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateLevelDto {
+  set_id: number;
+  title: string;
+  description: string;
+  order_index?: number;
+}
+
+export interface UpdateLevelDto {
+  title?: string;
+  description?: string;
+  order_index?: number;
+}
+
+// Tipos para preguntas (questions)
+export enum QuestionType {
+  TEXT = 'text',
+  MULTIPLE_CHOICE = 'multiple-choice',
+  CODE = 'code'
+}
+
+export interface Question {
+  id: number;
+  levelId: number;
+  prompt: string;
+  type: string;
+  answer: string;
+  options: string;
+  explanation: string;
+  difficulty: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateQuestionDto {
+  level_id: number;
+  prompt: string;
+  type: string;
+  answer: string;
+  options?: string;
+  explanation?: string;
+  difficulty: number;
+}
+
+export interface UpdateQuestionDto {
+  prompt?: string;
+  type?: string;
+  answer?: string;
+  options?: string;
+  explanation?: string;
+  difficulty?: number;
+}
+
 // Función para manejar errores
 const handleApiError = async (response: Response) => {
   if (!response.ok) {
@@ -128,16 +215,16 @@ export const courseApi = {
   
   // Crear un nuevo curso (requiere autenticación)
   createCourse: async (courseData: CreateCourseDto): Promise<Course> => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      throw new Error('No estás autenticado');
-    }
+    //const token = localStorage.getItem('auth_token');
+    //if (!token) {
+    //  throw new Error('No estás autenticado');
+    //}
     
     const response = await fetch(`${API_URL}/courses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        //'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(courseData)
     });
@@ -147,16 +234,16 @@ export const courseApi = {
   
   // Actualizar un curso existente (requiere autenticación)
   updateCourse: async (id: number, courseData: Partial<CreateCourseDto>): Promise<Course> => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      throw new Error('No estás autenticado');
-    }
+    //const token = localStorage.getItem('auth_token');
+    //if (!token) {
+    //  throw new Error('No estás autenticado');
+    //}
     
     const response = await fetch(`${API_URL}/courses/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        //'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(courseData)
     });
@@ -166,15 +253,15 @@ export const courseApi = {
   
   // Eliminar un curso (requiere autenticación)
   deleteCourse: async (id: number): Promise<void> => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      throw new Error('No estás autenticado');
-    }
+    //const token = localStorage.getItem('auth_token');
+    //if (!token) {
+    //  throw new Error('No estás autenticado');
+    //}
     
     const response = await fetch(`${API_URL}/courses/${id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`
+        //'Authorization': `Bearer ${token}`
       }
     });
     
@@ -183,4 +270,379 @@ export const courseApi = {
       throw new Error(data.error || 'Error al eliminar el curso');
     }
   }
+};
+
+// Conjuntos (Sets)
+export const setApi = {
+  getSetsByCourse: async (courseId: number): Promise<Set[]> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/sets/course/${courseId}`, {
+        headers: {
+          //...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching sets');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching sets:', error);
+      throw error;
+    }
+  },
+  
+  getSet: async (id: number): Promise<Set> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/sets/${id}`, {
+        headers: {
+          //...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching set');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching set:', error);
+      throw error;
+    }
+  },
+  
+  createSet: async (data: CreateSetDto): Promise<Set> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/sets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          //Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error creating set');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error creating set:', error);
+      throw error;
+    }
+  },
+  
+  updateSet: async (id: number, data: UpdateSetDto): Promise<Set> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/sets/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          //Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error updating set');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error updating set:', error);
+      throw error;
+    }
+  },
+  
+  deleteSet: async (id: number): Promise<void> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/sets/${id}`, {
+        method: 'DELETE',
+        headers: {
+          //Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error deleting set');
+      }
+    } catch (error) {
+      console.error('Error deleting set:', error);
+      throw error;
+    }
+  },
+};
+
+// Niveles (Levels)
+export const levelApi = {
+  getLevelsBySet: async (setId: number): Promise<Level[]> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/levels/set/${setId}`, {
+        headers: {
+          //...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching levels');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching levels:', error);
+      throw error;
+    }
+  },
+  
+  getLevel: async (id: number): Promise<Level> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/levels/${id}`, {
+        headers: {
+          //...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching level');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching level:', error);
+      throw error;
+    }
+  },
+  
+  createLevel: async (data: CreateLevelDto): Promise<Level> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/levels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          //Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error creating level');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error creating level:', error);
+      throw error;
+    }
+  },
+  
+  updateLevel: async (id: number, data: UpdateLevelDto): Promise<Level> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/levels/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          //Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error updating level');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error updating level:', error);
+      throw error;
+    }
+  },
+  
+  deleteLevel: async (id: number): Promise<void> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/levels/${id}`, {
+        method: 'DELETE',
+        headers: {
+          //Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error deleting level');
+      }
+    } catch (error) {
+      console.error('Error deleting level:', error);
+      throw error;
+    }
+  },
+};
+
+// Preguntas (Questions)
+export const questionApi = {
+  getQuestionsByLevel: async (levelId: number): Promise<Question[]> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/questions/level/${levelId}`, {
+        headers: {
+          //...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching questions');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      throw error;
+    }
+  },
+  
+  getQuestion: async (id: number): Promise<Question> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/questions/${id}`, {
+        headers: {
+          //...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching question');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching question:', error);
+      throw error;
+    }
+  },
+  
+  createQuestion: async (data: CreateQuestionDto): Promise<Question> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          //Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error creating question');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error creating question:', error);
+      throw error;
+    }
+  },
+  
+  updateQuestion: async (id: number, data: UpdateQuestionDto): Promise<Question> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/questions/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          //Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error updating question');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error updating question:', error);
+      throw error;
+    }
+  },
+  
+  deleteQuestion: async (id: number): Promise<void> => {
+    try {
+      //const token = localStorage.getItem('token');
+      
+      //if (!token) {
+      //  throw new Error('Authentication required');
+      //}
+      
+      const response = await fetch(`${API_URL}/questions/${id}`, {
+        method: 'DELETE',
+        headers: {
+          //Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error deleting question');
+      }
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      throw error;
+    }
+  },
 }; 

@@ -28,21 +28,23 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowRight, Edit, Layers, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
+import { Edit, BookOpen, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { Course, CreateSetDto, Set, courseApi, setApi } from "@/lib/api"
+import { Course, CreateLevelDto, Level, Set, courseApi, levelApi, setApi } from "@/lib/api"
 
-export default function AdminSets() {
+export default function AdminLevels() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [newSet, setNewSet] = useState({
+  const [newLevel, setNewLevel] = useState({
     title: "",
     description: "",
-    courseId: ""
+    setId: ""
   })
-  const [sets, setSets] = useState<Set[]>([])
+  const [levels, setLevels] = useState<Level[]>([])
   const [courses, setCourses] = useState<Course[]>([])
+  const [sets, setSets] = useState<Set[]>([])
   const [selectedCourse, setSelectedCourse] = useState<string>("")
+  const [selectedSet, setSelectedSet] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
 
   const { toast } = useToast()
@@ -70,6 +72,8 @@ export default function AdminSets() {
 
   // Cargar conjuntos cuando se selecciona un curso
   useEffect(() => {
+    setSelectedSet("")
+    
     if (!selectedCourse) {
       setSets([])
       return
@@ -92,39 +96,63 @@ export default function AdminSets() {
     fetchSets()
   }, [selectedCourse])
 
-  // Filtrar conjuntos según la búsqueda
-  const filteredSets = sets.filter(
-    (set) =>
-      set.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (set.description && set.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Cargar niveles cuando se selecciona un conjunto
+  useEffect(() => {
+    if (!selectedSet) {
+      setLevels([])
+      return
+    }
+    
+    const fetchLevels = async () => {
+      try {
+        const levelsData = await levelApi.getLevelsBySet(parseInt(selectedSet))
+        setLevels(levelsData)
+      } catch (error) {
+        console.error('Error fetching levels:', error)
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los niveles. Intente de nuevo más tarde.",
+          variant: "destructive",
+        })
+      }
+    }
+    
+    fetchLevels()
+  }, [selectedSet])
+
+  // Filtrar niveles según la búsqueda
+  const filteredLevels = levels.filter(
+    (level) =>
+      level.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (level.description && level.description.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   // Manejar cambios en el formulario
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setNewSet((prev) => ({
+    setNewLevel((prev) => ({
       ...prev,
       [name]: value,
     }))
   }
 
-  // Manejar cambio en select de curso
-  const handleCourseChange = (value: string) => {
-    setNewSet(prev => ({
+  // Manejar cambio en select de conjunto
+  const handleSetChange = (value: string) => {
+    setNewLevel(prev => ({
       ...prev,
-      courseId: value
+      setId: value
     }))
   }
 
-  // Encontrar nombre del curso
-  const getCourseName = (courseId: number) => {
-    const course = courses.find(c => c.id === courseId)
-    return course ? course.title : 'Curso desconocido'
+  // Encontrar nombre del conjunto
+  const getSetName = (setId: number) => {
+    const set = sets.find(s => s.id === setId)
+    return set ? set.title : 'Conjunto desconocido'
   }
 
-  // Manejar creación de conjunto
-  const handleCreateSet = async () => {
-    if (!newSet.title || !newSet.courseId) {
+  // Manejar creación de nivel
+  const handleCreateLevel = async () => {
+    if (!newLevel.title || !newLevel.setId) {
       toast({
         title: "Error",
         description: "Por favor complete todos los campos requeridos.",
@@ -135,65 +163,63 @@ export default function AdminSets() {
     
     try {
       // Crear objeto DTO para la API
-      const createSetDto: CreateSetDto = {
-        course_id: parseInt(newSet.courseId),
-        title: newSet.title,
-        description: newSet.description
+      const createLevelDto: CreateLevelDto = {
+        set_id: parseInt(newLevel.setId),
+        title: newLevel.title,
+        description: newLevel.description
       }
       
-      // Llamar a la API para crear el conjunto
-      await setApi.createSet(createSetDto)
+      // Llamar a la API para crear el nivel
+      await levelApi.createLevel(createLevelDto)
       
-      // Actualizar la lista de conjuntos si hay un curso seleccionado
-      if (selectedCourse) {
-        const updatedSets = await setApi.getSetsByCourse(parseInt(selectedCourse))
-        setSets(updatedSets)
-      }
+      // Actualizar la lista de niveles
+      const updatedLevels = await levelApi.getLevelsBySet(parseInt(selectedSet))
+      setLevels(updatedLevels)
       
       // Mostrar mensaje de éxito
       toast({
-        title: "Conjunto creado",
-        description: "El conjunto ha sido creado correctamente.",
+        title: "Nivel creado",
+        description: "El nivel ha sido creado correctamente.",
         variant: "success",
       })
       
       // Cerrar diálogo y limpiar formulario
       setIsCreateDialogOpen(false)
-      setNewSet({
+      setNewLevel({
         title: "",
         description: "",
-        courseId: ""
+        setId: ""
       })
     } catch (error) {
-      console.error('Error creating set:', error)
+      console.error('Error creating level:', error)
       toast({
         title: "Error",
-        description: "No se pudo crear el conjunto. Intente de nuevo más tarde.",
+        description: "No se pudo crear el nivel. Intente de nuevo más tarde.",
         variant: "destructive",
       })
     }
   }
 
-  // Manejar eliminación de conjunto
-  const handleDeleteSet = async (setId: number) => {
+  // Manejar eliminación de nivel
+  const handleDeleteLevel = async (levelId: number) => {
     try {
-      // Llamar a la API para eliminar el conjunto
-      await setApi.deleteSet(setId)
+      // Llamar a la API para eliminar el nivel
+      await levelApi.deleteLevel(levelId)
       
-      // Actualizar la lista de conjuntos
-      setSets(prevSets => prevSets.filter(s => s.id !== setId))
+      // Actualizar la lista de niveles
+      setLevels(prevLevels => prevLevels.filter(l => l.id !== levelId))
       
       // Mostrar mensaje de éxito
       toast({
-        title: "Conjunto eliminado",
-        description: "El conjunto ha sido eliminado correctamente.",
+        title: "Nivel eliminado",
+        description: "El nivel ha sido eliminado correctamente.",
         variant: "success",
       })
     } catch (error) {
-      console.error('Error deleting set:', error)
+      console.error('Error deleting level:', error)
       toast({
         title: "Error",
-        description: "No se pudo eliminar el conjunto. Intente de nuevo más tarde.",
+        description: "No se pudo eliminar el nivel. Intente de nuevo más tarde.",
         variant: "destructive",
       })
     }
@@ -202,43 +228,43 @@ export default function AdminSets() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Gestión de Conjuntos</h1>
+        <h1 className="text-3xl font-bold">Gestión de Niveles</h1>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={!selectedSet}>
               <Plus className="h-4 w-4 mr-2" />
-              Nuevo Conjunto
+              Nuevo Nivel
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Conjunto</DialogTitle>
-              <DialogDescription>Completa los detalles para crear un nuevo conjunto.</DialogDescription>
+              <DialogTitle>Crear Nuevo Nivel</DialogTitle>
+              <DialogDescription>Completa los detalles para crear un nuevo nivel.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="courseId">Curso</Label>
-                <Select value={newSet.courseId} onValueChange={handleCourseChange}>
-                  <SelectTrigger id="courseId">
-                    <SelectValue placeholder="Selecciona un curso" />
+                <Label htmlFor="setId">Conjunto</Label>
+                <Select value={newLevel.setId} onValueChange={handleSetChange}>
+                  <SelectTrigger id="setId">
+                    <SelectValue placeholder="Selecciona un conjunto" />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.map(course => (
-                      <SelectItem key={course.id} value={course.id.toString()}>
-                        {course.title}
+                    {sets.map(set => (
+                      <SelectItem key={set.id} value={set.id.toString()}>
+                        {set.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="title">Título del conjunto</Label>
+                <Label htmlFor="title">Título del nivel</Label>
                 <Input
                   id="title"
                   name="title"
-                  value={newSet.title}
+                  value={newLevel.title}
                   onChange={handleInputChange}
-                  placeholder="Ej: Fundamentos de Álgebra"
+                  placeholder="Ej: Nivel 1 - Introducción"
                 />
               </div>
               <div className="grid gap-2">
@@ -246,9 +272,9 @@ export default function AdminSets() {
                 <Textarea
                   id="description"
                   name="description"
-                  value={newSet.description}
+                  value={newLevel.description}
                   onChange={handleInputChange}
-                  placeholder="Breve descripción del conjunto..."
+                  placeholder="Breve descripción del nivel..."
                   rows={3}
                 />
               </div>
@@ -257,7 +283,7 @@ export default function AdminSets() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleCreateSet}>Crear Conjunto</Button>
+              <Button onClick={handleCreateLevel}>Crear Nivel</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -265,12 +291,12 @@ export default function AdminSets() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Conjuntos</CardTitle>
-          <CardDescription>Gestiona los conjuntos para tus cursos.</CardDescription>
+          <CardTitle>Niveles</CardTitle>
+          <CardDescription>Gestiona los niveles para los conjuntos de tus cursos.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="courseSelect" className="mb-2 block">Curso</Label>
                 <Select value={selectedCourse} onValueChange={setSelectedCourse}>
@@ -287,27 +313,44 @@ export default function AdminSets() {
                   </SelectContent>
                 </Select>
               </div>
-              {selectedCourse && (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar conjuntos..."
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              )}
+              <div>
+                <Label htmlFor="setSelect" className="mb-2 block">Conjunto</Label>
+                <Select value={selectedSet} onValueChange={setSelectedSet} disabled={!selectedCourse}>
+                  <SelectTrigger id="setSelect">
+                    <SelectValue placeholder={selectedCourse ? "Selecciona un conjunto" : "Primero selecciona un curso"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Selecciona un conjunto</SelectItem>
+                    {sets.map(set => (
+                      <SelectItem key={set.id} value={set.id.toString()}>
+                        {set.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
+            {selectedSet && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar niveles..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
-          {selectedCourse ? (
+          {selectedSet ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Nivel</TableHead>
                     <TableHead>Conjunto</TableHead>
-                    <TableHead>Curso</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -316,32 +359,32 @@ export default function AdminSets() {
                     <TableRow>
                       <TableCell colSpan={3} className="text-center py-4">Cargando datos...</TableCell>
                     </TableRow>
-                  ) : filteredSets.length === 0 ? (
+                  ) : filteredLevels.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center py-4">
                         {searchQuery 
                           ? "No se encontraron resultados para su búsqueda" 
-                          : "No hay conjuntos disponibles para este curso"}
+                          : "No hay niveles disponibles para este conjunto"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredSets.map((set) => (
-                      <TableRow key={set.id}>
+                    filteredLevels.map((level) => (
+                      <TableRow key={level.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Layers className="h-5 w-5 text-primary" />
+                            <BookOpen className="h-5 w-5 text-primary" />
                             <div>
-                              <div className="font-medium">{set.title}</div>
-                              {set.description && (
+                              <div className="font-medium">{level.title}</div>
+                              {level.description && (
                                 <div className="text-sm text-muted-foreground line-clamp-1">
-                                  {set.description}
+                                  {level.description}
                                 </div>
                               )}
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{getCourseName(set.courseId)}</Badge>
+                          <Badge variant="outline">{getSetName(level.setId)}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -358,14 +401,10 @@ export default function AdminSets() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <ArrowRight className="h-4 w-4 mr-2" />
-                                Ver niveles
-                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
-                                onClick={() => handleDeleteSet(set.id)}
+                                onClick={() => handleDeleteLevel(level.id)}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Eliminar
@@ -381,11 +420,11 @@ export default function AdminSets() {
             </div>
           ) : (
             <div className="text-center p-8 text-muted-foreground">
-              Selecciona un curso para ver los conjuntos disponibles.
+              Selecciona un curso y conjunto para ver los niveles disponibles.
             </div>
           )}
         </CardContent>
       </Card>
     </div>
   )
-}
+} 
