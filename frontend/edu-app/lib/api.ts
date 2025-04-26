@@ -157,6 +157,7 @@ export interface CreateUserAnswerDto {
 export interface RagQuestion {
   courseId: number;
   question: string;
+  additionalContext?: string;
 }
 
 export interface RagAnswer {

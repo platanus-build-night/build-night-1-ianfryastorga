@@ -63,10 +63,15 @@ export class RagService {
     }
   }
 
-  async answerQuestion(courseId: number, question: string): Promise<string> {
+  async answerQuestion(courseId: number, question: string, additionalContext: string = ''): Promise<string> {
     try {
       // Obtener el contexto del curso
       const courseContext = await this.generateCourseContext(courseId);
+
+      // Añadir contexto personalizado si existe
+      const completeContext = additionalContext 
+        ? `${courseContext}\n\nCONTEXTO ADICIONAL:\n${additionalContext}` 
+        : courseContext;
 
       // Formatear el mensaje para la API de OpenAI
       const systemMessage = `Eres un asistente educativo experto en el contenido del curso. 
@@ -74,7 +79,7 @@ export class RagService {
       concisa y educativa. Si no encuentras la respuesta en el contexto, indícalo honestamente.
 
       CONTEXTO DEL CURSO:
-      ${courseContext}`;
+      ${completeContext}`;
 
       // Llamar a la API de OpenAI
       const response = await axios.post(

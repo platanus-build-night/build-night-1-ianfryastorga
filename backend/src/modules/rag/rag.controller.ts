@@ -10,14 +10,18 @@ export class RagController {
 
   answerQuestion = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { courseId, question } = req.body;
+      const { courseId, question, additionalContext } = req.body;
       
       if (!courseId || !question) {
         res.status(400).json({ error: 'Se requiere courseId y question' });
         return;
       }
 
-      const answer = await this.ragService.answerQuestion(parseInt(courseId), question);
+      const answer = await this.ragService.answerQuestion(
+        parseInt(courseId), 
+        question,
+        additionalContext || ''
+      );
       res.status(200).json({ answer });
     } catch (error) {
       console.error('Error en el controlador RAG:', error);

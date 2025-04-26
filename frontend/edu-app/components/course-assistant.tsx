@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Send, Bot, Loader2 } from "lucide-react";
+import { Send, Bot, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ragApi } from "@/lib/api";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -31,6 +32,8 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
   
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
+  const [additionalContext, setAdditionalContext] = useState('');
+  const [showContextInput, setShowContextInput] = useState(false);
   
   const handleQuestionSubmit = async () => {
     if (!question.trim() || loading) return;
@@ -50,7 +53,8 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
       // Enviar la pregunta al backend
       const response = await ragApi.answerQuestion({
         courseId,
-        question: userMessage.content
+        question: userMessage.content,
+        additionalContext: additionalContext.trim() || undefined
       });
       
       // Añadir la respuesta a los mensajes
@@ -80,9 +84,38 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
   return (
     <Card className="h-[500px] flex flex-col">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          Asistente de Curso
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            Asistente de Curso
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => setShowContextInput(!showContextInput)}
+              >
+                {showContextInput ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                Contexto
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Añadir contexto personalizado</h4>
+                <p className="text-xs text-muted-foreground">
+                  Añade información adicional que el asistente tendrá en cuenta al responder tus preguntas.
+                </p>
+                <Textarea 
+                  placeholder="Ej: Estoy trabajando en un proyecto sobre..." 
+                  value={additionalContext}
+                  onChange={(e) => setAdditionalContext(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
