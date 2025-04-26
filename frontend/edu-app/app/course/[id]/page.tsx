@@ -6,9 +6,11 @@ import { CircleCheck, CircleX, School } from "lucide-react"
 import { courseApi, Course } from "@/lib/api"
 import { setApi, Set } from "@/lib/api"
 import { levelApi, Level } from "@/lib/api"
+import { userAnswerApi } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 import { SetCard } from "@/components/set-card"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import {
   Card,
   CardContent,
@@ -17,6 +19,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+
+interface LevelProgress {
+  levelId: number;
+  levelTitle: string;
+  totalQuestions: number;
+  answeredCorrectly: number;
+  progress: number;
+  questionIds: number[];
+}
+
+interface UserProgressData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  overall: {
+    totalQuestionsAnswered: number;
+    uniqueQuestionsAnswered: number;
+    totalCorrectAnswers: number;
+    accuracy: number;
+  };
+  progressByLevel: LevelProgress[];
+}
 
 export default function CoursePage() {
   // Acceder a los parámetros directamente sin usar use()
@@ -28,6 +54,9 @@ export default function CoursePage() {
   const [course, setCourse] = useState<Course | null>(null)
   const [sets, setSets] = useState<Set[]>([])
   const [levelsMap, setLevelsMap] = useState<Record<number, Level[]>>({})
+  const [levelProgressMap, setLevelProgressMap] = useState<Record<number, number>>({})
+  const [userProgress, setUserProgress] = useState<UserProgressData | null>(null)
+  const [courseProgress, setCourseProgress] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -55,6 +84,42 @@ export default function CoursePage() {
         }
         
         setLevelsMap(levelsData)
+        
+        // Obtener el progreso del usuario
+        try {
+          const userJson = localStorage.getItem('user')
+          if (userJson) {
+            const user = JSON.parse(userJson)
+            const progress = await userAnswerApi.getUserProgress(user.id)
+            setUserProgress(progress)
+            
+            // Crear mapa de progreso por nivel
+            const levelProgress: Record<number, number> = {}
+            if (progress && progress.progressByLevel) {
+              progress.progressByLevel.forEach(level => {
+                levelProgress[level.levelId] = level.progress
+              })
+            }
+            setLevelProgressMap(levelProgress)
+            
+            // Calcular progreso general del curso
+            // Filtramos solo los niveles de este curso
+            const courseLevelIds = Object.values(levelsData).flat().map(level => level.id)
+            const courseLevelProgress = progress.progressByLevel.filter(level => 
+              courseLevelIds.includes(level.levelId)
+            )
+            
+            if (courseLevelProgress.length > 0) {
+              const totalProgress = courseLevelProgress.reduce((sum, level) => sum + level.progress, 0)
+              const avgProgress = Math.round(totalProgress / courseLevelProgress.length)
+              setCourseProgress(avgProgress)
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching user progress:", err)
+          // No establecemos error aquí para no bloquear la carga del curso
+        }
+        
         setError(null)
       } catch (err) {
         console.error("Error fetching course data:", err)
@@ -106,10 +171,6 @@ export default function CoursePage() {
   // Calcular el progreso general del curso
   const allLevels = Object.values(levelsMap).flat()
   const totalLevels = allLevels.length
-  // Por ahora, suponemos que ningún nivel está completado
-  // Esto debe actualizarse con la lógica real de progreso cuando esté disponible
-  const completedLevels = 0
-  const progress = totalLevels === 0 ? 0 : Math.round((completedLevels / totalLevels) * 100)
 
   return (
     <div className="container py-8">
@@ -123,11 +184,23 @@ export default function CoursePage() {
             <CardDescription>{course.description}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4 py-2">
-              <div className="flex items-center gap-2">
-                <CircleCheck className="h-5 w-5 text-primary" />
-                <span>Progreso: {progress}%</span>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 py-2">
+                <div className="flex-1">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-medium">Progreso del curso</span>
+                    <span className="text-sm font-medium">{courseProgress}%</span>
+                  </div>
+                  <Progress value={courseProgress} className="h-2" />
+                </div>
               </div>
+              
+              {course.estimated_duration && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CircleCheck className="h-4 w-4 text-primary" />
+                  <span>Duración estimada: {course.estimated_duration} horas</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -155,7 +228,8 @@ export default function CoursePage() {
                   levels={(levelsMap[set.id] || []).map(level => ({
                     id: level.id,
                     title: level.title,
-                    completed: false // Esto se debe actualizar con el estado real de completado
+                    completed: levelProgressMap[level.id] === 100, // Nivel completado si el progreso es 100%
+                    progress: levelProgressMap[level.id] || 0 // Progreso del nivel según las respuestas
                   }))}
                 />
               ))}

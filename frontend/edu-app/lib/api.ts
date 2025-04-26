@@ -734,4 +734,25 @@ export const userAnswerApi = {
       throw error;
     }
   },
+  
+  getUserProgress: async (userId: string): Promise<any> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/user-answers/progress/${userId}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching user progress');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching user progress:', error);
+      throw error;
+    }
+  },
 }; 

@@ -14,4 +14,7 @@ userAnswerRouter.put('/:id', userAnswerController.updateUserAnswer);
 userAnswerRouter.get('/user/:userId', userAnswerController.getUserAnswers);
 
 // Obtener todas las respuestas para una pregunta
-userAnswerRouter.get('/question/:questionId', userAnswerController.getQuestionAnswers); 
+userAnswerRouter.get('/question/:questionId', userAnswerController.getQuestionAnswers);
+
+// Obtener el progreso del usuario
+userAnswerRouter.get('/progress/:userId', userAnswerController.getUserProgress); 

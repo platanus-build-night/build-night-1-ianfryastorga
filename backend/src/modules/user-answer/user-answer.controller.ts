@@ -37,4 +37,11 @@ export class UserAnswerController {
     const questionAnswers = await this.userAnswerService.getQuestionAnswers(questionId);
     res.status(200).json(questionAnswers);
   };
+
+  getUserProgress = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.params.userId;
+    
+    const progress = await this.userAnswerService.getUserProgress(userId);
+    res.status(200).json(progress);
+  };
 } 

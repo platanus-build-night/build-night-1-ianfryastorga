@@ -13,13 +13,14 @@ interface SetCardProps {
     id: number
     title: string
     completed: boolean
+    progress: number
   }[]
   className?: string
 }
 
 export function SetCard({ id, courseId, title, description, levels, className }: SetCardProps) {
-  const completedLevels = levels.filter((level) => level.completed).length
-  const progress = levels.length === 0 ? 0 : Math.round((completedLevels / levels.length) * 100)
+  const totalProgress = levels.reduce((sum, level) => sum + level.progress, 0);
+  const progress = levels.length === 0 ? 0 : Math.round(totalProgress / levels.length);
 
   return (
     <Accordion type="single" collapsible className={cn("w-full", className)}>
