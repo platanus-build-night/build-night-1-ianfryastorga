@@ -29,6 +29,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HelpCircle, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Course, CreateQuestionDto, Level, Question, QuestionType, Set, courseApi, levelApi, questionApi, setApi } from "@/lib/api"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export default function AdminQuestions() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -38,7 +40,9 @@ export default function AdminQuestions() {
     answer: "",
     level_id: undefined,
     type: QuestionType.TEXT,
-    difficulty: 1
+    difficulty: 1,
+    options: "",
+    explanation: ""
   })
   const [questions, setQuestions] = useState<Question[]>([])
   const [courses, setCourses] = useState<Course[]>([])
@@ -55,6 +59,10 @@ export default function AdminQuestions() {
   const [formLevels, setFormLevels] = useState<Level[]>([])
   const [formLoading, setFormLoading] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
+  
+  // Estado para opciones de respuesta multiple
+  const [options, setOptions] = useState<string[]>(["", "", "", ""])
+  const [correctOptionIndex, setCorrectOptionIndex] = useState<number>(0)
 
   const { toast } = useToast()
 
@@ -229,6 +237,32 @@ export default function AdminQuestions() {
       level_id: parseInt(value)
     }))
   }
+  
+  // Manejar cambio en select de tipo de pregunta
+  const handleTypeChange = (value: string) => {
+    setNewQuestion(prev => ({
+      ...prev,
+      type: value
+    }))
+    
+    // Si se cambia a multiple choice, resetear las opciones
+    if (value === QuestionType.MULTIPLE_CHOICE) {
+      setOptions(["", "", "", ""])
+      setCorrectOptionIndex(0)
+    }
+  }
+  
+  // Manejar cambio en opciones de respuesta múltiple
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...options]
+    newOptions[index] = value
+    setOptions(newOptions)
+  }
+  
+  // Manejar cambio en la opción correcta
+  const handleCorrectOptionChange = (index: number) => {
+    setCorrectOptionIndex(index)
+  }
 
   // Resetear formulario al abrir el diálogo
   const handleOpenDialog = (open: boolean) => {
@@ -237,12 +271,16 @@ export default function AdminQuestions() {
       setFormSetId("")
       setFormSets([])
       setFormLevels([])
+      setOptions(["", "", "", ""])
+      setCorrectOptionIndex(0)
       setNewQuestion({
         prompt: "",
         answer: "",
         level_id: undefined,
         type: QuestionType.TEXT,
-        difficulty: 1
+        difficulty: 1,
+        options: "",
+        explanation: ""
       })
     }
     setIsCreateDialogOpen(open)
@@ -250,7 +288,7 @@ export default function AdminQuestions() {
 
   // Manejar creación de pregunta
   const handleCreateQuestion = async () => {
-    if (!newQuestion.prompt || !newQuestion.answer || !newQuestion.level_id) {
+    if (!newQuestion.prompt || !newQuestion.level_id) {
       toast({
         title: "Error",
         description: "Por favor complete todos los campos requeridos.",
@@ -265,8 +303,43 @@ export default function AdminQuestions() {
         level_id: newQuestion.level_id,
         prompt: newQuestion.prompt,
         type: newQuestion.type || QuestionType.TEXT,
-        answer: newQuestion.answer,
+        answer: newQuestion.type === QuestionType.MULTIPLE_CHOICE 
+                ? correctOptionIndex.toString()
+                : newQuestion.answer || "",
+        options: newQuestion.type === QuestionType.MULTIPLE_CHOICE 
+                ? JSON.stringify(options)
+                : "",
+        explanation: newQuestion.explanation || "",
         difficulty: newQuestion.difficulty || 1
+      }
+      
+      // Validaciones específicas por tipo
+      if (newQuestion.type === QuestionType.MULTIPLE_CHOICE) {
+        const validOptions = options.filter(opt => opt.trim().length > 0)
+        if (validOptions.length < 2) {
+          toast({
+            title: "Error",
+            description: "Las preguntas de opción múltiple deben tener al menos 2 opciones.",
+            variant: "destructive",
+          })
+          return
+        }
+        
+        if (!options[correctOptionIndex] || options[correctOptionIndex].trim() === "") {
+          toast({
+            title: "Error",
+            description: "La opción marcada como correcta no puede estar vacía.",
+            variant: "destructive",
+          })
+          return
+        }
+      } else if (!newQuestion.answer || newQuestion.answer.trim() === "") {
+        toast({
+          title: "Error",
+          description: "La respuesta no puede estar vacía.",
+          variant: "destructive",
+        })
+        return
       }
       
       // Llamar a la API para crear la pregunta
@@ -292,8 +365,12 @@ export default function AdminQuestions() {
         answer: "",
         level_id: undefined,
         type: QuestionType.TEXT,
-        difficulty: 1
+        difficulty: 1,
+        options: "",
+        explanation: ""
       })
+      setOptions(["", "", "", ""])
+      setCorrectOptionIndex(0)
       setFormCourseId("")
       setFormSetId("")
     } catch (error) {
@@ -328,6 +405,51 @@ export default function AdminQuestions() {
         description: "No se pudo eliminar la pregunta. Intente de nuevo más tarde.",
         variant: "destructive",
       })
+    }
+  }
+  
+  // Función para renderizar las opciones de acuerdo al tipo de pregunta
+  const renderQuestionTypeFields = () => {
+    if (newQuestion.type === QuestionType.MULTIPLE_CHOICE) {
+      return (
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label>Opciones de respuesta</Label>
+            {options.map((option, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <RadioGroup value={correctOptionIndex.toString()} onValueChange={(val) => handleCorrectOptionChange(parseInt(val))}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                    <Label htmlFor={`option-${index}`} className="sr-only">Opción correcta</Label>
+                  </div>
+                </RadioGroup>
+                <Input
+                  value={option}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                  placeholder={`Opción ${index + 1}`}
+                  className="flex-1"
+                />
+              </div>
+            ))}
+            <div className="text-xs text-muted-foreground mt-1">
+              Selecciona el radio button junto a la opción correcta
+            </div>
+          </div>
+        </div>
+      )
+    } else {
+      return (
+        <div className="grid gap-2">
+          <Label htmlFor="answer">Respuesta</Label>
+          <Input
+            id="answer"
+            name="answer"
+            value={newQuestion.answer}
+            onChange={handleInputChange}
+            placeholder="Ej: πr²"
+          />
+        </div>
+      )
     }
   }
 
@@ -422,6 +544,20 @@ export default function AdminQuestions() {
               {newQuestion.level_id && (
                 <>
                   <div className="grid gap-2">
+                    <Label htmlFor="type">Tipo de pregunta</Label>
+                    <Select value={newQuestion.type} onValueChange={handleTypeChange}>
+                      <SelectTrigger id="type">
+                        <SelectValue placeholder="Selecciona el tipo de pregunta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={QuestionType.TEXT}>Texto</SelectItem>
+                        <SelectItem value={QuestionType.MULTIPLE_CHOICE}>Opción múltiple</SelectItem>
+                        <SelectItem value={QuestionType.CODE}>Código</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                
+                  <div className="grid gap-2">
                     <Label htmlFor="prompt">Texto de la pregunta</Label>
                     <Textarea
                       id="prompt"
@@ -432,16 +568,21 @@ export default function AdminQuestions() {
                       rows={3}
                     />
                   </div>
+                  
+                  {renderQuestionTypeFields()}
+                  
                   <div className="grid gap-2">
-                    <Label htmlFor="answer">Respuesta</Label>
-                    <Input
-                      id="answer"
-                      name="answer"
-                      value={newQuestion.answer}
+                    <Label htmlFor="explanation">Explicación (opcional)</Label>
+                    <Textarea
+                      id="explanation"
+                      name="explanation"
+                      value={newQuestion.explanation}
                       onChange={handleInputChange}
-                      placeholder="Ej: πr²"
+                      placeholder="Explicación de la respuesta correcta"
+                      rows={2}
                     />
                   </div>
+                  
                   <div className="grid gap-2">
                     <Label htmlFor="difficulty">Dificultad (1-5)</Label>
                     <Input
@@ -464,7 +605,7 @@ export default function AdminQuestions() {
               </Button>
               <Button 
                 onClick={handleCreateQuestion} 
-                disabled={!newQuestion.level_id || !newQuestion.prompt || !newQuestion.answer}
+                disabled={!newQuestion.level_id || !newQuestion.prompt}
               >
                 Crear Pregunta
               </Button>
@@ -565,6 +706,7 @@ export default function AdminQuestions() {
                   <TableRow>
                     <TableHead>Pregunta</TableHead>
                     <TableHead>Respuesta</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Dificultad</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
@@ -572,11 +714,11 @@ export default function AdminQuestions() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4">Cargando datos...</TableCell>
+                      <TableCell colSpan={5} className="text-center py-4">Cargando datos...</TableCell>
                     </TableRow>
                   ) : filteredQuestions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4">
+                      <TableCell colSpan={5} className="text-center py-4">
                         {searchQuery 
                           ? "No se encontraron resultados para su búsqueda" 
                           : "No hay preguntas disponibles para este nivel"}
@@ -591,7 +733,32 @@ export default function AdminQuestions() {
                             <div className="font-medium line-clamp-2">{question.prompt}</div>
                           </div>
                         </TableCell>
-                        <TableCell>{question.answer}</TableCell>
+                        <TableCell>
+                          {question.type === QuestionType.MULTIPLE_CHOICE && question.options ? (
+                            <div>
+                              {(() => {
+                                try {
+                                  const options = JSON.parse(question.options);
+                                  const correctIndex = parseInt(question.answer);
+                                  return options[correctIndex] || "Error en formato";
+                                } catch (e) {
+                                  return "Error en formato";
+                                }
+                              })()}
+                            </div>
+                          ) : (
+                            question.answer
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {question.type === QuestionType.TEXT 
+                              ? "Texto" 
+                              : question.type === QuestionType.MULTIPLE_CHOICE 
+                                ? "Opción múltiple" 
+                                : "Código"}
+                          </Badge>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={question.difficulty > 3 ? "destructive" : "secondary"}>
                             {question.difficulty}

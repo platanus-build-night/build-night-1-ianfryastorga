@@ -30,12 +30,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowRight, Edit, Layers, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { Course, CreateSetDto, Set, courseApi, setApi } from "@/lib/api"
+import { Course, CreateSetDto, Set, UpdateSetDto, courseApi, setApi } from "@/lib/api"
+import { useRouter } from "next/navigation"
 
 export default function AdminSets() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [currentSet, setCurrentSet] = useState<Set | null>(null)
   const [newSet, setNewSet] = useState({
+    title: "",
+    description: "",
+    courseId: ""
+  })
+  const [editSet, setEditSet] = useState({
+    id: 0,
     title: "",
     description: "",
     courseId: ""
@@ -44,7 +53,8 @@ export default function AdminSets() {
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
-
+  
+  const router = useRouter()
   const { toast } = useToast()
 
   // Cargar cursos al iniciar
@@ -99,7 +109,7 @@ export default function AdminSets() {
       (set.description && set.description.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  // Manejar cambios en el formulario
+  // Manejar cambios en el formulario de creación
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setNewSet((prev) => ({
@@ -108,9 +118,26 @@ export default function AdminSets() {
     }))
   }
 
-  // Manejar cambio en select de curso
+  // Manejar cambios en el formulario de edición
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setEditSet((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  // Manejar cambio en select de curso para creación
   const handleCourseChange = (value: string) => {
     setNewSet(prev => ({
+      ...prev,
+      courseId: value
+    }))
+  }
+
+  // Manejar cambio en select de curso para edición
+  const handleEditCourseChange = (value: string) => {
+    setEditSet(prev => ({
       ...prev,
       courseId: value
     }))
@@ -120,6 +147,22 @@ export default function AdminSets() {
   const getCourseName = (courseId: number) => {
     const course = courses.find(c => c.id === courseId)
     return course ? course.title : 'Curso desconocido'
+  }
+
+  // Abrir modal de edición con datos del conjunto
+  const handleOpenEditDialog = (set: Set) => {
+    setEditSet({
+      id: set.id,
+      title: set.title,
+      description: set.description || "",
+      courseId: set.courseId.toString()
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  // Manejar redirección a niveles
+  const handleViewLevels = (setId: number) => {
+    router.push(`/admin/niveles?set=${setId}`)
   }
 
   // Manejar creación de conjunto
@@ -169,6 +212,52 @@ export default function AdminSets() {
       toast({
         title: "Error",
         description: "No se pudo crear el conjunto. Intente de nuevo más tarde.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Manejar actualización de conjunto
+  const handleUpdateSet = async () => {
+    if (!editSet.title) {
+      toast({
+        title: "Error",
+        description: "El título del conjunto es requerido.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    try {
+      // Crear objeto DTO para la API
+      const updateSetDto: UpdateSetDto = {
+        title: editSet.title,
+        description: editSet.description
+      }
+      
+      // Llamar a la API para actualizar el conjunto
+      await setApi.updateSet(editSet.id, updateSetDto)
+      
+      // Actualizar la lista de conjuntos
+      if (selectedCourse) {
+        const updatedSets = await setApi.getSetsByCourse(parseInt(selectedCourse))
+        setSets(updatedSets)
+      }
+      
+      // Mostrar mensaje de éxito
+      toast({
+        title: "Conjunto actualizado",
+        description: "El conjunto ha sido actualizado correctamente.",
+        variant: "success",
+      })
+      
+      // Cerrar diálogo
+      setIsEditDialogOpen(false)
+    } catch (error) {
+      console.error('Error updating set:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el conjunto. Intente de nuevo más tarde.",
         variant: "destructive",
       })
     }
@@ -258,6 +347,45 @@ export default function AdminSets() {
                 Cancelar
               </Button>
               <Button onClick={handleCreateSet}>Crear Conjunto</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de edición de conjunto */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[550px]">
+            <DialogHeader>
+              <DialogTitle>Editar Conjunto</DialogTitle>
+              <DialogDescription>Modifica los detalles del conjunto.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="editTitle">Título del conjunto</Label>
+                <Input
+                  id="editTitle"
+                  name="title"
+                  value={editSet.title}
+                  onChange={handleEditInputChange}
+                  placeholder="Ej: Fundamentos de Álgebra"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editDescription">Descripción</Label>
+                <Textarea
+                  id="editDescription"
+                  name="description"
+                  value={editSet.description}
+                  onChange={handleEditInputChange}
+                  placeholder="Breve descripción del conjunto..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleUpdateSet}>Guardar Cambios</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -354,11 +482,11 @@ export default function AdminSets() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditDialog(set)}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewLevels(set.id)}>
                                 <ArrowRight className="h-4 w-4 mr-2" />
                                 Ver niveles
                               </DropdownMenuItem>

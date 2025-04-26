@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,7 +26,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Edit, BookOpen, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
+import { BookOpen, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Course, CreateLevelDto, Level, Set, courseApi, levelApi, setApi } from "@/lib/api"
 
@@ -46,6 +44,7 @@ export default function AdminLevels() {
   const [selectedCourse, setSelectedCourse] = useState<string>("")
   const [selectedSet, setSelectedSet] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(true)
+  const [formLoading, setFormLoading] = useState<boolean>(false)
 
   const { toast } = useToast()
 
@@ -72,10 +71,9 @@ export default function AdminLevels() {
 
   // Cargar conjuntos cuando se selecciona un curso
   useEffect(() => {
-    setSelectedSet("")
-    
-    if (!selectedCourse) {
+    if (!selectedCourse || selectedCourse === "0") {
       setSets([])
+      setSelectedSet("")
       return
     }
     
@@ -98,7 +96,7 @@ export default function AdminLevels() {
 
   // Cargar niveles cuando se selecciona un conjunto
   useEffect(() => {
-    if (!selectedSet) {
+    if (!selectedSet || selectedSet === "0") {
       setLevels([])
       return
     }
@@ -150,6 +148,25 @@ export default function AdminLevels() {
     return set ? set.title : 'Conjunto desconocido'
   }
 
+  // Resetear formulario al abrir el diálogo
+  const handleOpenDialog = (open: boolean) => {
+    if (open) {
+      if (selectedSet && selectedSet !== "0") {
+        setNewLevel(prev => ({
+          ...prev,
+          setId: selectedSet
+        }))
+      } else {
+        setNewLevel({
+          title: "",
+          description: "",
+          setId: ""
+        })
+      }
+    }
+    setIsCreateDialogOpen(open)
+  }
+
   // Manejar creación de nivel
   const handleCreateLevel = async () => {
     if (!newLevel.title || !newLevel.setId) {
@@ -172,9 +189,11 @@ export default function AdminLevels() {
       // Llamar a la API para crear el nivel
       await levelApi.createLevel(createLevelDto)
       
-      // Actualizar la lista de niveles
-      const updatedLevels = await levelApi.getLevelsBySet(parseInt(selectedSet))
-      setLevels(updatedLevels)
+      // Actualizar la lista de niveles si hay un conjunto seleccionado
+      if (selectedSet) {
+        const updatedLevels = await levelApi.getLevelsBySet(parseInt(selectedSet))
+        setLevels(updatedLevels)
+      }
       
       // Mostrar mensaje de éxito
       toast({
@@ -229,9 +248,9 @@ export default function AdminLevels() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Gestión de Niveles</h1>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={handleOpenDialog}>
           <DialogTrigger asChild>
-            <Button disabled={!selectedSet}>
+            <Button disabled={!selectedSet || selectedSet === "0"}>
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Nivel
             </Button>
@@ -249,11 +268,17 @@ export default function AdminLevels() {
                     <SelectValue placeholder="Selecciona un conjunto" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sets.map(set => (
-                      <SelectItem key={set.id} value={set.id.toString()}>
-                        {set.title}
+                    {sets.length > 0 ? (
+                      sets.map(set => (
+                        <SelectItem key={set.id} value={set.id.toString()}>
+                          {set.title}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="empty" disabled>
+                        No hay conjuntos disponibles
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -264,7 +289,7 @@ export default function AdminLevels() {
                   name="title"
                   value={newLevel.title}
                   onChange={handleInputChange}
-                  placeholder="Ej: Nivel 1 - Introducción"
+                  placeholder="Ej: Nivel 1 - Principiante"
                 />
               </div>
               <div className="grid gap-2">
@@ -274,7 +299,7 @@ export default function AdminLevels() {
                   name="description"
                   value={newLevel.description}
                   onChange={handleInputChange}
-                  placeholder="Breve descripción del nivel..."
+                  placeholder="Ej: Conceptos básicos para principiantes"
                   rows={3}
                 />
               </div>
@@ -283,7 +308,9 @@ export default function AdminLevels() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleCreateLevel}>Crear Nivel</Button>
+              <Button onClick={handleCreateLevel} disabled={!newLevel.title || !newLevel.setId}>
+                Crear Nivel
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -292,11 +319,11 @@ export default function AdminLevels() {
       <Card>
         <CardHeader>
           <CardTitle>Niveles</CardTitle>
-          <CardDescription>Gestiona los niveles para los conjuntos de tus cursos.</CardDescription>
+          <CardDescription>Gestiona los niveles para tus conjuntos. Selecciona un curso y un conjunto para ver sus niveles.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="courseSelect" className="mb-2 block">Curso</Label>
                 <Select value={selectedCourse} onValueChange={setSelectedCourse}>
@@ -313,25 +340,32 @@ export default function AdminLevels() {
                   </SelectContent>
                 </Select>
               </div>
+              
               <div>
                 <Label htmlFor="setSelect" className="mb-2 block">Conjunto</Label>
-                <Select value={selectedSet} onValueChange={setSelectedSet} disabled={!selectedCourse}>
+                <Select value={selectedSet} onValueChange={setSelectedSet} disabled={!selectedCourse || selectedCourse === "0"}>
                   <SelectTrigger id="setSelect">
-                    <SelectValue placeholder={selectedCourse ? "Selecciona un conjunto" : "Primero selecciona un curso"} />
+                    <SelectValue placeholder="Selecciona un conjunto" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">Selecciona un conjunto</SelectItem>
-                    {sets.map(set => (
-                      <SelectItem key={set.id} value={set.id.toString()}>
-                        {set.title}
+                    {sets.length > 0 ? (
+                      sets.map(set => (
+                        <SelectItem key={set.id} value={set.id.toString()}>
+                          {set.title}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="empty" disabled>
+                        No hay conjuntos disponibles
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             
-            {selectedSet && (
+            {selectedSet && selectedSet !== "0" && (
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -344,27 +378,29 @@ export default function AdminLevels() {
             )}
           </div>
 
-          {selectedSet ? (
+          {selectedSet && selectedSet !== "0" ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nivel</TableHead>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Descripción</TableHead>
                     <TableHead>Conjunto</TableHead>
+                    <TableHead>Orden</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4">Cargando datos...</TableCell>
+                      <TableCell colSpan={5} className="text-center py-4">Cargando datos...</TableCell>
                     </TableRow>
                   ) : filteredLevels.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4">
+                      <TableCell colSpan={5} className="text-center py-4">
                         {searchQuery 
                           ? "No se encontraron resultados para su búsqueda" 
-                          : "No hay niveles disponibles para este conjunto"}
+                          : "No hay niveles disponibles para este conjunto. Crea tu primer nivel."}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -372,20 +408,15 @@ export default function AdminLevels() {
                       <TableRow key={level.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <BookOpen className="h-5 w-5 text-primary" />
-                            <div>
-                              <div className="font-medium">{level.title}</div>
-                              {level.description && (
-                                <div className="text-sm text-muted-foreground line-clamp-1">
-                                  {level.description}
-                                </div>
-                              )}
-                            </div>
+                            <BookOpen className="h-5 w-5 text-primary flex-shrink-0" />
+                            <div className="font-medium">{level.title}</div>
                           </div>
                         </TableCell>
+                        <TableCell className="max-w-xs truncate">{level.description}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{getSetName(level.setId)}</Badge>
                         </TableCell>
+                        <TableCell>{level.orderIndex}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -396,11 +427,6 @@ export default function AdminLevels() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
@@ -420,7 +446,7 @@ export default function AdminLevels() {
             </div>
           ) : (
             <div className="text-center p-8 text-muted-foreground">
-              Selecciona un curso y conjunto para ver los niveles disponibles.
+              Selecciona un curso y un conjunto para ver los niveles disponibles.
             </div>
           )}
         </CardContent>
