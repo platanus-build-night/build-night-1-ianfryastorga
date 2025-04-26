@@ -149,8 +149,8 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
           </Popover>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea ref={scrollAreaRef} className="h-[320px] pr-4">
+      <CardContent className="flex-1 overflow-hidden p-4">
+        <ScrollArea ref={scrollAreaRef} className="h-full w-full pr-4">
           <div className="space-y-4">
             {messages.map((message, index) => (
               <div 
@@ -205,13 +205,14 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
           </div>
         </ScrollArea>
       </CardContent>
-      <CardFooter>
-        <div className="flex w-full gap-2">
+      <CardFooter className="p-4 border-t">
+        <div className="flex w-full gap-2 items-end">
           <Textarea 
             placeholder="Haz una pregunta sobre el curso..." 
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="flex-1 resize-none"
+            rows={1}
+            className="flex-1 resize-none min-h-[40px] max-h-[150px] overflow-y-auto"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -223,6 +224,7 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
             size="icon" 
             onClick={handleQuestionSubmit} 
             disabled={loading || !question.trim()}
+            className="shrink-0"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

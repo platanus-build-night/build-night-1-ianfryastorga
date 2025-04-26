@@ -103,17 +103,24 @@ export default function CoursePage() {
             }
             setLevelProgressMap(levelProgress)
             
-            // Calcular progreso general del curso
-            // Filtramos solo los niveles de este curso
-            const courseLevelIds = Object.values(levelsData).flat().map(level => level.id)
-            const courseLevelProgress = progress.progressByLevel.filter(level => 
-              courseLevelIds.includes(level.levelId)
-            )
+            // Calcular progreso general del curso (NUEVA LÓGICA)
+            const allCourseLevels = Object.values(levelsData).flat();
+            const totalCourseLevels = allCourseLevels.length;
             
-            if (courseLevelProgress.length > 0) {
-              const totalProgress = courseLevelProgress.reduce((sum, level) => sum + level.progress, 0)
-              const avgProgress = Math.round(totalProgress / courseLevelProgress.length)
-              setCourseProgress(avgProgress)
+            if (totalCourseLevels > 0 && progress && progress.progressByLevel) {
+              // Contar cuántos niveles de este curso están completados (progreso 100%)
+              const completedLevelsCount = allCourseLevels.filter(level => {
+                const levelProg = progress.progressByLevel.find(p => p.levelId === level.id);
+                return levelProg && levelProg.progress === 100;
+              }).length;
+              
+              // Calcular el porcentaje de niveles completados
+              const overallCourseProgress = Math.round((completedLevelsCount / totalCourseLevels) * 100);
+              console.log(`Progreso Curso: ${completedLevelsCount}/${totalCourseLevels} niveles completados = ${overallCourseProgress}%`);
+              setCourseProgress(overallCourseProgress);
+            } else {
+              // Si no hay niveles o progreso, el progreso es 0
+              setCourseProgress(0);
             }
           }
         } catch (err) {

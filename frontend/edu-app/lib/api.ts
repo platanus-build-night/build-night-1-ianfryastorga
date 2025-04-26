@@ -201,10 +201,34 @@ export interface OpenAIPdfResponse {
 // Función para manejar errores
 const handleApiError = async (response: Response) => {
   if (!response.ok) {
-    const data = await response.json().catch(() => ({ error: 'Error desconocido' }));
-    const errorMessage = data.error || 'Ha ocurrido un error';
+    let errorMessage = 'Ha ocurrido un error desconocido';
+    let errorDetails: any = null;
+    try {
+      // Intentar parsear el cuerpo como JSON
+      errorDetails = await response.json();
+      // Intentar obtener el mensaje de error de diferentes campos comunes
+      errorMessage = errorDetails.error || errorDetails.message || errorDetails.detail || JSON.stringify(errorDetails);
+      console.error("Detalles del error API (JSON):");
+      console.error(errorDetails);
+    } catch (e) {
+      // Si no es JSON, intentar obtener el texto plano
+      try {
+        errorMessage = await response.text();
+        console.error("Respuesta de error API (Texto):");
+        console.error(errorMessage);
+      } catch (textError) {
+        // Si tampoco se puede obtener el texto, usar el status
+        errorMessage = `Error en la petición: ${response.status} ${response.statusText}`;
+        console.error("No se pudo obtener cuerpo del error API");
+      }
+    }
+    // Asegurarse de que errorMessage sea una cadena
+    if (typeof errorMessage !== 'string') {
+      errorMessage = JSON.stringify(errorMessage);
+    }
     throw new Error(errorMessage);
   }
+  // Si todo está bien, parsear la respuesta JSON exitosa
   return response.json();
 };
 
@@ -280,16 +304,16 @@ export const courseApi = {
   
   // Crear un nuevo curso (requiere autenticación)
   createCourse: async (courseData: CreateCourseDto): Promise<Course> => {
-    //const token = localStorage.getItem('auth_token');
-    //if (!token) {
-    //  throw new Error('No estás autenticado');
-    //}
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('No estás autenticado para crear un curso. Por favor, inicia sesión.');
+    }
     
     const response = await fetch(`${API_URL}/courses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        //'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(courseData)
     });
