@@ -158,10 +158,45 @@ export interface RagQuestion {
   courseId: number;
   question: string;
   additionalContext?: string;
+  fileId?: string;
 }
 
 export interface RagAnswer {
   answer: string;
+  citations?: any[];
+}
+
+// Documentos RAG
+export interface RagDocument {
+  id: number;
+  course_id: number;
+  title: string;
+  content: string;
+  active: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateRagDocumentDto {
+  course_id: number;
+  title: string;
+  content: string;
+}
+
+export interface UpdateRagDocumentDto {
+  title?: string;
+  content?: string;
+  active?: boolean;
+}
+
+export interface OpenAIPdfResponse {
+  rag_document_id: number;
+  file_id: string;
+  filename: string;
+  bytes: number;
+  created_at: string;
+  purpose: string;
+  instructions?: string;
 }
 
 // Función para manejar errores
@@ -794,6 +829,74 @@ export const ragApi = {
     }
   },
   
+  // Método para procesar PDF con el endpoint tradicional
+  processPdf: async (formData: FormData): Promise<RagDocument> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/process-pdf`, {
+        method: 'POST',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+          // No incluir Content-Type aquí para que el navegador lo establezca correctamente para FormData
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Error al procesar el PDF';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          console.error('Detalles del error:', errorData);
+        } catch (parseError) {
+          console.error('Error al analizar la respuesta de error:', parseError);
+          errorMessage += `: Estado ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error al procesar PDF:', error);
+      throw error;
+    }
+  },
+  
+  // Nuevo método para procesar PDF con OpenAI
+  processPdfWithOpenAI: async (formData: FormData): Promise<OpenAIPdfResponse> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/process-pdf-openai`, {
+        method: 'POST',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+          // No incluir Content-Type aquí para que el navegador lo establezca correctamente para FormData
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Error al procesar el PDF con OpenAI';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          console.error('Detalles del error:', errorData);
+        } catch (parseError) {
+          console.error('Error al analizar la respuesta de error:', parseError);
+          errorMessage += `: Estado ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error al procesar PDF con OpenAI:', error);
+      throw error;
+    }
+  },
+  
   getCourseContext: async (courseId: number): Promise<{ context: string }> => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -811,6 +914,117 @@ export const ragApi = {
       return response.json();
     } catch (error) {
       console.error('Error al obtener contexto del curso:', error);
+      throw error;
+    }
+  },
+
+  // Documentos RAG
+  getDocumentsByCourse: async (courseId: number): Promise<RagDocument[]> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/documents/course/${courseId}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener documentos RAG');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error al obtener documentos RAG:', error);
+      throw error;
+    }
+  },
+  
+  getDocumentById: async (id: number): Promise<RagDocument> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/documents/${id}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener documento RAG');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error al obtener documento RAG:', error);
+      throw error;
+    }
+  },
+  
+  createDocument: async (data: CreateRagDocumentDto): Promise<RagDocument> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/documents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al crear documento RAG');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error al crear documento RAG:', error);
+      throw error;
+    }
+  },
+  
+  updateDocument: async (id: number, data: UpdateRagDocumentDto): Promise<RagDocument> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/documents/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar documento RAG');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error al actualizar documento RAG:', error);
+      throw error;
+    }
+  },
+  
+  deleteDocument: async (id: number): Promise<void> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/documents/${id}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al eliminar documento RAG');
+      }
+    } catch (error) {
+      console.error('Error al eliminar documento RAG:', error);
       throw error;
     }
   }

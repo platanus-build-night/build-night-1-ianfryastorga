@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Send, Bot, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,26 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
   const [additionalContext, setAdditionalContext] = useState('');
   const [showContextInput, setShowContextInput] = useState(false);
   
+  // Obtener el file_id almacenado para este curso, si existe
+  const [openAIFileId, setOpenAIFileId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Recuperar el file_id de OpenAI almacenado para este curso
+    const storedFileId = window.localStorage.getItem(`openai_file_${courseId}`);
+    if (storedFileId) {
+      setOpenAIFileId(storedFileId);
+      // Añadir un mensaje informativo si hay un documento de OpenAI disponible
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'He detectado que este curso tiene un documento PDF subido a OpenAI. Puedes hacerme preguntas sobre su contenido.',
+          timestamp: new Date()
+        }
+      ]);
+    }
+  }, [courseId]);
+  
   const handleQuestionSubmit = async () => {
     if (!question.trim() || loading) return;
     
@@ -50,21 +70,32 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
     setLoading(true);
     
     try {
-      // Enviar la pregunta al backend
+      // Enviar la pregunta al backend, incluyendo el file_id si existe
       const response = await ragApi.answerQuestion({
         courseId,
         question: userMessage.content,
-        additionalContext: additionalContext.trim() || undefined
+        additionalContext: additionalContext.trim() || undefined,
+        fileId: openAIFileId || undefined
       });
       
       // Añadir la respuesta a los mensajes
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.answer,
+        content: response.answer || (typeof response === 'object' ? response.text : String(response)),
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Si hay citas en la respuesta, mostrarlas
+      if (response.citations && response.citations.length > 0) {
+        const citationsMessage: Message = {
+          role: 'assistant',
+          content: `Fuentes: ${response.citations.map((c: any) => c.filename || c.file_id).join(', ')}`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, citationsMessage]);
+      }
     } catch (error) {
       console.error('Error al obtener respuesta del asistente:', error);
       

@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { BookOpen, ChevronDown, Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
+import { BookOpen, ChevronDown, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { courseApi, Course } from "@/lib/api"
@@ -177,6 +177,13 @@ export default function AdminCourses() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Gestión de Cursos</h1>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => router.push('/admin/rag-documentos')}
+          >
+            <FileText className="h-4 w-4 mr-2" /> 
+            Documentos RAG
+          </Button>
           <Button onClick={() => {
             const fetchCourses = async () => {
               try {
@@ -297,23 +304,23 @@ export default function AdminCourses() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {course.createdAt ? (
-                          course.createdAt.includes(' ') && course.createdAt.includes('-') ? (
+                        {course.created_at ? (
+                          course.created_at.includes(' ') && course.created_at.includes('-') ? (
                             (() => {
                               // Extraer la parte de la fecha (sin hora) y convertir a DD/MM/YYYY
-                              const datePart = course.createdAt.split(' ')[0]; // "2025-04-26"
+                              const datePart = course.created_at.split(' ')[0]; // "2025-04-26"
                               const [year, month, day] = datePart.split('-');
                               return `${day}/${month}/${year}`;
                             })()
                           ) : (
-                            course.createdAt // Si no tiene el formato esperado, mostrar tal cual
+                            course.created_at // Si no tiene el formato esperado, mostrar tal cual
                           )
                         ) : (
                           'Sin fecha'
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant={course.is_published ? "success" : "secondary"} className="text-xs">
+                        <Badge variant={course.is_published ? "default" : "secondary"} className="text-xs">
                           {course.is_published ? "Publicado" : "Borrador"}
                         </Badge>
                       </TableCell>
@@ -331,12 +338,7 @@ export default function AdminCourses() {
                                 Ver
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/admin/cursos/editar/${course.id}`}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </Link>
-                            </DropdownMenuItem>
+                            
                             <DropdownMenuItem onClick={() => handleTogglePublish(course)}>
                               {course.is_published ? (
                                 <>
@@ -350,6 +352,14 @@ export default function AdminCourses() {
                                 </>
                               )}
                             </DropdownMenuItem>
+
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/rag-documentos?courseId=${course.id}`}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Documentos RAG
+                              </Link>
+                            </DropdownMenuItem>
+                            
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               onClick={() => handleDeleteCourse(course)} 
