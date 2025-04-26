@@ -19,8 +19,10 @@ import {
 } from "@/components/ui/card"
 
 export default function CoursePage() {
-  const { id } = useParams()
-  const courseId = Array.isArray(id) ? id[0] : id
+  // Acceder a los parámetros directamente sin usar use()
+  const params = useParams();
+  const id = params.id;
+  const courseId = Array.isArray(id) ? id[0] : id;
   const { toast } = useToast()
 
   const [course, setCourse] = useState<Course | null>(null)

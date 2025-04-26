@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Check, Lock } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface LevelStepperProps {
@@ -16,63 +16,33 @@ interface LevelStepperProps {
 }
 
 export function LevelStepper({ courseId, setId, levels, className }: LevelStepperProps) {
-  // Encontrar el primer nivel no completado
-  const firstIncompleteIndex = levels.findIndex((level) => !level.completed)
-
   return (
-    <div className={cn("flex flex-col space-y-2", className)}>
-      <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-        {levels.map((level, index) => {
-          const isLocked = !level.completed && index > firstIncompleteIndex
-          const isActive = index === firstIncompleteIndex
-
-          return (
-            <Link
-              key={level.id}
-              href={isLocked ? "#" : `/course/${courseId}/set/${setId}/level/${level.id}`}
-              className={cn(
-                "flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-200",
-                level.completed ? "bg-pastel-green border-pastel-green text-white" : "",
-                isActive ? "bg-primary border-primary text-white" : "",
-                isLocked
-                  ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700"
-                  : "card-hover",
-                !level.completed && !isActive && !isLocked ? "border-gray-300 hover:border-primary" : "",
-              )}
-            >
-              {level.completed ? (
-                <Check className="h-5 w-5" />
-              ) : isLocked ? (
-                <Lock className="h-4 w-4" />
-              ) : (
-                <span className="font-bold">{level.id}</span>
-              )}
-            </Link>
-          )
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-        {levels.map((level, index) => {
-          const isLocked = !level.completed && index > firstIncompleteIndex
-          const isActive = index === firstIncompleteIndex
-
-          return (
-            <div
-              key={level.id}
-              className={cn(
-                "text-xs px-3 py-2 rounded border",
-                level.completed ? "border-pastel-green/30 bg-pastel-green/10" : "",
-                isActive ? "border-primary/30 bg-primary/10" : "",
-                isLocked ? "border-gray-200 bg-gray-100 text-gray-400 dark:bg-gray-800 dark:border-gray-700" : "",
-                !level.completed && !isActive && !isLocked ? "border-gray-300" : "",
-              )}
-            >
-              <span className="font-medium">Nivel {level.id}:</span> {level.title}
-            </div>
-          )
-        })}
-      </div>
+    <div className={cn("space-y-1", className)}>
+      {levels.map((level, index) => (
+        <Link
+          key={level.id}
+          href={`/course/${courseId}/set/${setId}/level/${level.id}`}
+          className={cn(
+            "flex items-center gap-3 py-2 px-3 rounded-md transition-colors cursor-pointer",
+            level.completed
+              ? "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400"
+              : "hover:bg-muted"
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center justify-center h-6 w-6 rounded-full text-xs font-medium",
+              level.completed
+                ? "bg-green-600 dark:bg-green-400/20 text-white dark:text-green-400"
+                : "bg-muted-foreground/20 text-muted-foreground"
+            )}
+          >
+            {index + 1}
+          </div>
+          <span>{level.title}</span>
+          <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+        </Link>
+      ))}
     </div>
   )
 }

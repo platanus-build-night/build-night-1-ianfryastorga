@@ -17,11 +17,12 @@ interface QuestionCardProps {
     options?: string[]
     answer: string
   }
-  onSubmit: (isCorrect: boolean) => void
+  onSubmit: (isCorrect: boolean, userAnswer: string) => void
+  isAnswered?: boolean
   className?: string
 }
 
-export function QuestionCard({ question, onSubmit, className }: QuestionCardProps) {
+export function QuestionCard({ question, onSubmit, isAnswered = false, className }: QuestionCardProps) {
   const [userAnswer, setUserAnswer] = useState("")
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null)
@@ -41,7 +42,7 @@ export function QuestionCard({ question, onSubmit, className }: QuestionCardProp
       })
     }
 
-    onSubmit(isCorrect)
+    onSubmit(isCorrect, answer || "")
   }
 
   const renderInput = () => {
@@ -53,7 +54,7 @@ export function QuestionCard({ question, onSubmit, className }: QuestionCardProp
             onChange={(e) => setUserAnswer(e.target.value)}
             placeholder="Tu respuesta..."
             className="w-full"
-            disabled={feedback !== null}
+            disabled={feedback !== null || isAnswered}
           />
         )
       case "multiple-choice":
@@ -70,8 +71,8 @@ export function QuestionCard({ question, onSubmit, className }: QuestionCardProp
                   feedback === "incorrect" && option === selectedOption ? "bg-destructive text-white" : "",
                   feedback === "incorrect" && option === question.answer ? "border-pastel-green text-pastel-green" : "",
                 )}
-                onClick={() => feedback === null && setSelectedOption(option)}
-                disabled={feedback !== null}
+                onClick={() => feedback === null && !isAnswered && setSelectedOption(option)}
+                disabled={feedback !== null || isAnswered}
               >
                 {option}
               </Button>
@@ -85,7 +86,7 @@ export function QuestionCard({ question, onSubmit, className }: QuestionCardProp
             onChange={(e) => setUserAnswer(e.target.value)}
             placeholder="Escribe tu código aquí..."
             className="font-mono h-32"
-            disabled={feedback !== null}
+            disabled={feedback !== null || isAnswered}
           />
         )
     }
@@ -120,13 +121,13 @@ export function QuestionCard({ question, onSubmit, className }: QuestionCardProp
         )}
         <Button
           onClick={handleSubmit}
-          disabled={feedback !== null || (!userAnswer && !selectedOption)}
+          disabled={feedback !== null || isAnswered || (!userAnswer && !selectedOption)}
           className={cn(
             feedback === "correct" ? "bg-pastel-green hover:bg-pastel-green/90" : "",
             feedback === "incorrect" ? "bg-destructive hover:bg-destructive/90" : "",
           )}
         >
-          Comprobar
+          {isAnswered ? "Respondido" : "Comprobar"}
         </Button>
       </CardFooter>
     </Card>

@@ -5,25 +5,38 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { QuestionCard } from "@/components/question-card"
-import { ChevronLeft, Keyboard } from "lucide-react"
+import { ChevronLeft, Keyboard, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { questionApi, Question, QuestionType } from "@/lib/api"
 import { levelApi, Level } from "@/lib/api"
+
+interface UserAnswer {
+  questionId: number;
+  answer: string;
+  isCorrect: boolean;
+}
 
 export default function LevelPage({
   params,
 }: {
   params: { id: string; setId: string; levelId: string }
 }) {
-  const { id: courseId, setId, levelId } = params
+  // Acceder a los parámetros directamente sin usar use()
+  const courseId = params.id;
+  const setId = params.setId;
+  const levelId = params.levelId;
+  
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [showTheory, setShowTheory] = useState(true)
   const [questions, setQuestions] = useState<Question[]>([])
   const [level, setLevel] = useState<Level | null>(null)
   const [theory, setTheory] = useState<string>("")
+  const [hasTheory, setHasTheory] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([])
+  const [allQuestionsAnswered, setAllQuestionsAnswered] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -39,18 +52,19 @@ export default function LevelPage({
         const questionsData = await questionApi.getQuestionsByLevel(parseInt(levelId))
         setQuestions(questionsData)
         
-        // TODO: Cuando exista la API para obtener teoría, implementar aquí
-        // Por ahora usamos una teoría de prueba basada en el título del nivel
-        setTheory(`
+        // Verificar si el nivel tiene contenido teórico
+        if (levelData.theoryContent) {
+          setTheory(levelData.theoryContent)
+          setHasTheory(true)
+        } else {
+          // Crear contenido de teoría genérico si no existe
+          setTheory(`
 ## ${levelData.title}
 
-Este es el contenido teórico para este nivel. El contenido real se implementará cuando la API de teoría esté disponible.
-
-### Puntos clave:
-1. Estudia el contenido detenidamente.
-2. Intenta resolver los ejercicios por tu cuenta.
-3. Revisa la teoría si tienes dudas al responder las preguntas.
-        `)
+Este nivel no contiene teoría detallada.
+          `)
+          setHasTheory(false)
+        }
         
         setError(null)
       } catch (err) {
@@ -69,7 +83,26 @@ Este es el contenido teórico para este nivel. El contenido real se implementar�
     fetchData()
   }, [levelId, toast])
 
-  const handleQuestionSubmit = (isCorrect: boolean) => {
+  useEffect(() => {
+    // Verificar si todas las preguntas han sido respondidas
+    if (userAnswers.length > 0 && userAnswers.length === questions.length) {
+      setAllQuestionsAnswered(true)
+    }
+  }, [userAnswers, questions])
+
+  const handleQuestionSubmit = (isCorrect: boolean, userAnswer: string) => {
+    const currentQuestion = questions[currentQuestionIndex];
+    
+    // Guardar la respuesta del usuario
+    setUserAnswers(prev => [
+      ...prev,
+      {
+        questionId: currentQuestion.id,
+        answer: userAnswer,
+        isCorrect: isCorrect
+      }
+    ])
+    
     if (isCorrect) {
       // Mostrar toast de éxito
       toast({
@@ -138,6 +171,12 @@ Este es el contenido teórico para este nivel. El contenido real se implementar�
     answer: currentQuestion.answer
   };
 
+  // Verificar si esta pregunta ya fue respondida
+  const isAnswered = userAnswers.some(answer => answer.questionId === currentQuestion.id);
+
+  // Calcular progreso de preguntas respondidas
+  const progressPercentage = (userAnswers.length / questions.length) * 100;
+
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-6">
@@ -155,7 +194,7 @@ Este es el contenido teórico para este nivel. El contenido real se implementar�
           <div className="w-32 bg-muted h-2 rounded-full">
             <div
               className="bg-primary h-2 rounded-full transition-all duration-200"
-              style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+              style={{ width: `${progressPercentage}%` }}
             />
           </div>
         </div>
@@ -163,35 +202,55 @@ Este es el contenido teórico para este nivel. El contenido real se implementar�
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <QuestionCard question={formattedQuestion} onSubmit={handleQuestionSubmit} />
+          <QuestionCard 
+            question={formattedQuestion} 
+            onSubmit={(isCorrect, userAnswer) => handleQuestionSubmit(isCorrect, userAnswer)} 
+            isAnswered={isAnswered}
+          />
+
+          {allQuestionsAnswered && (
+            <div className="mt-6 text-center">
+              <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900">
+                <CardContent className="p-4 flex flex-col items-center gap-3">
+                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  <p className="font-medium">¡Has completado todas las preguntas de este nivel!</p>
+                  <Button asChild>
+                    <Link href={`/course/${courseId}`}>Volver al curso</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-0 right-0 z-10"
-            onClick={() => setShowTheory(!showTheory)}
-          >
-            {showTheory ? "Ocultar teoría" : "Mostrar teoría"}
-          </Button>
+        {hasTheory && (
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-0 right-0 z-10"
+              onClick={() => setShowTheory(!showTheory)}
+            >
+              {showTheory ? "Ocultar teoría" : "Mostrar teoría"}
+            </Button>
 
-          <Card
-            className={cn(
-              "sticky top-20 transition-all duration-200 overflow-hidden",
-              showTheory ? "max-h-[calc(100vh-10rem)]" : "max-h-12",
-            )}
-          >
-            <CardContent
+            <Card
               className={cn(
-                "p-6 prose dark:prose-invert max-w-none overflow-auto",
-                showTheory ? "max-h-[calc(100vh-12rem)]" : "max-h-0 p-0",
+                "sticky top-20 transition-all duration-200 overflow-hidden",
+                showTheory ? "max-h-[calc(100vh-10rem)]" : "max-h-12",
               )}
             >
-              <div dangerouslySetInnerHTML={{ __html: theory }} />
-            </CardContent>
-          </Card>
-        </div>
+              <CardContent
+                className={cn(
+                  "p-6 prose dark:prose-invert max-w-none overflow-auto",
+                  showTheory ? "max-h-[calc(100vh-12rem)]" : "max-h-0 p-0",
+                )}
+              >
+                <div dangerouslySetInnerHTML={{ __html: theory }} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-center gap-2 mt-6 text-sm text-muted-foreground">
