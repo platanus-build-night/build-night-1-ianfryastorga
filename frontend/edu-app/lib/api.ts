@@ -133,6 +133,26 @@ export interface UpdateQuestionDto {
   difficulty?: number;
 }
 
+export interface UserAnswer {
+  id?: number;
+  userId: string;
+  questionId: number;
+  userAnswer: string;
+  isCorrect: boolean;
+  attemptNumber?: number;
+  timeTaken?: number;
+  createdAt?: Date;
+}
+
+export interface CreateUserAnswerDto {
+  user_id: string;
+  question_id: number;
+  user_answer: string;
+  is_correct: boolean;
+  attempt_number?: number;
+  time_taken?: number;
+}
+
 // Función para manejar errores
 const handleApiError = async (response: Response) => {
   if (!response.ok) {
@@ -642,6 +662,75 @@ export const questionApi = {
       }
     } catch (error) {
       console.error('Error deleting question:', error);
+      throw error;
+    }
+  },
+};
+
+// User Answers
+export const userAnswerApi = {
+  createUserAnswer: async (data: CreateUserAnswerDto): Promise<UserAnswer> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/user-answers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error saving user answer');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error saving user answer:', error);
+      throw error;
+    }
+  },
+  
+  getUserAnswers: async (userId: string): Promise<UserAnswer[]> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/user-answers/user/${userId}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching user answers');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching user answers:', error);
+      throw error;
+    }
+  },
+  
+  getQuestionAnswers: async (questionId: number): Promise<UserAnswer[]> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/user-answers/question/${questionId}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error fetching question answers');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching question answers:', error);
       throw error;
     }
   },

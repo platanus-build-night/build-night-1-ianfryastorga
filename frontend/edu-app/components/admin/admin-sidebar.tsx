@@ -48,21 +48,6 @@ const adminRoutes = [
     href: "/admin/logros",
     icon: <Trophy className="h-5 w-5" />,
   },
-  {
-    title: "Foro",
-    href: "/admin/foro",
-    icon: <MessageSquare className="h-5 w-5" />,
-  },
-  {
-    title: "Estadísticas",
-    href: "/admin/estadisticas",
-    icon: <BarChart3 className="h-5 w-5" />,
-  },
-  {
-    title: "Configuración",
-    href: "/admin/configuracion",
-    icon: <Settings className="h-5 w-5" />,
-  },
 ]
 
 export function AdminSidebar() {

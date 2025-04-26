@@ -8,6 +8,7 @@ import { levelRouter } from './modules/level/level.routes';
 import { achievementRouter } from './modules/achievement/achievement.routes';
 import { userAchievementRouter } from './modules/achievement/user-achievement.routes';
 import { questionRouter } from './modules/question/question.routes';
+import { userAnswerRouter } from './modules/user-answer/user-answer.routes';
 import { errorHandler } from './common/error.middleware';
 
 export const app = express();
@@ -27,5 +28,6 @@ app.use('/api/levels', levelRouter);
 app.use('/api/achievements', achievementRouter);
 app.use('/api/user-achievements', userAchievementRouter);
 app.use('/api/questions', questionRouter);
+app.use('/api/user-answers', userAnswerRouter);
 
 app.use(errorHandler);

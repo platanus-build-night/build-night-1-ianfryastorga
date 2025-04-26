@@ -37,11 +37,6 @@ const navLinks = [
     icon: <LayoutDashboardIcon className="h-5 w-5" />,
   },
   {
-    name: "Plan de Estudio",
-    href: "/plan-estudio",
-    icon: <CalendarIcon className="h-5 w-5" />,
-  },
-  {
     name: "Estadísticas",
     href: "/estadisticas",
     icon: <BarChartIcon className="h-5 w-5" />,
@@ -128,8 +123,7 @@ export default function NavBar() {
         {/* Racha y Avatar */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-            <StreakFlame className="h-6 w-6 text-orange-500" />
-            <span className="font-medium">12</span>
+            <StreakFlame className="h-6 w-6 text-orange-500" streak={12} />
           </div>
 
           {isAuthenticated ? (

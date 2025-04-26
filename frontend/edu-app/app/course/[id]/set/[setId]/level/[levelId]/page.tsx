@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { questionApi, Question, QuestionType } from "@/lib/api"
 import { levelApi, Level } from "@/lib/api"
+import { userAnswerApi, CreateUserAnswerDto } from "@/lib/api"
 
 interface UserAnswer {
   questionId: number;
@@ -93,7 +94,7 @@ Este nivel no contiene teoría detallada.
   const handleQuestionSubmit = (isCorrect: boolean, userAnswer: string) => {
     const currentQuestion = questions[currentQuestionIndex];
     
-    // Guardar la respuesta del usuario
+    // Guardar la respuesta del usuario en el estado local
     setUserAnswers(prev => [
       ...prev,
       {
@@ -102,6 +103,29 @@ Este nivel no contiene teoría detallada.
         isCorrect: isCorrect
       }
     ])
+    
+    // Guardar la respuesta en la base de datos
+    const userId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}').id : 'guest';
+    
+    if (userId) {
+      const userAnswerData: CreateUserAnswerDto = {
+        user_id: userId,
+        question_id: currentQuestion.id,
+        user_answer: userAnswer,
+        is_correct: isCorrect,
+        time_taken: null // Aquí podríamos implementar un cronómetro para medir el tiempo de respuesta
+      };
+      
+      userAnswerApi.createUserAnswer(userAnswerData)
+        .catch(error => {
+          console.error("Error al guardar la respuesta:", error);
+          toast({
+            title: "Error",
+            description: "No se pudo guardar tu respuesta.",
+            variant: "destructive",
+          });
+        });
+    }
     
     if (isCorrect) {
       // Mostrar toast de éxito
