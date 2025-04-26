@@ -25,11 +25,19 @@ interface QuestionCardProps {
 export function QuestionCard({ question, onSubmit, isAnswered = false, className }: QuestionCardProps) {
   const [userAnswer, setUserAnswer] = useState("")
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null)
 
   const handleSubmit = () => {
-    const answer = question.type === "multiple-choice" ? selectedOption : userAnswer
-    const isCorrect = answer?.toLowerCase() === question.answer.toLowerCase()
+    let isCorrect = false;
+    
+    if (question.type === "multiple-choice") {
+      // Para preguntas de selección múltiple, compara índices
+      isCorrect = selectedIndex !== null && selectedIndex.toString() === question.answer;
+    } else {
+      // Para otros tipos, compara texto
+      isCorrect = userAnswer.toLowerCase() === question.answer.toLowerCase();
+    }
 
     setFeedback(isCorrect ? "correct" : "incorrect")
 
@@ -42,7 +50,7 @@ export function QuestionCard({ question, onSubmit, isAnswered = false, className
       })
     }
 
-    onSubmit(isCorrect, answer || "")
+    onSubmit(isCorrect, question.type === "multiple-choice" ? selectedIndex?.toString() || "" : userAnswer)
   }
 
   const renderInput = () => {
@@ -60,18 +68,23 @@ export function QuestionCard({ question, onSubmit, isAnswered = false, className
       case "multiple-choice":
         return (
           <div className="grid gap-2">
-            {question.options?.map((option) => (
+            {question.options?.map((option, index) => (
               <Button
                 key={option}
                 type="button"
-                variant={selectedOption === option ? "default" : "outline"}
+                variant={(selectedOption === option && selectedIndex === index) ? "default" : "outline"}
                 className={cn(
                   "justify-start text-left",
-                  feedback === "correct" && option === question.answer ? "bg-pastel-green text-white" : "",
-                  feedback === "incorrect" && option === selectedOption ? "bg-destructive text-white" : "",
-                  feedback === "incorrect" && option === question.answer ? "border-pastel-green text-pastel-green" : "",
+                  feedback === "correct" && index.toString() === question.answer ? "bg-pastel-green text-white" : "",
+                  feedback === "incorrect" && selectedIndex === index ? "bg-destructive text-white" : "",
+                  feedback === "incorrect" && index.toString() === question.answer ? "border-pastel-green text-pastel-green" : "",
                 )}
-                onClick={() => feedback === null && !isAnswered && setSelectedOption(option)}
+                onClick={() => {
+                  if (feedback === null && !isAnswered) {
+                    setSelectedOption(option);
+                    setSelectedIndex(index);
+                  }
+                }}
                 disabled={feedback !== null || isAnswered}
               >
                 {option}

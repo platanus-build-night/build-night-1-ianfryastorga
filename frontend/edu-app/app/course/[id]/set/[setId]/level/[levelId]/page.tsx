@@ -192,7 +192,7 @@ Este nivel no contiene teoría detallada.
     options: currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? 
       JSON.parse(currentQuestion.options || '[]') : 
       undefined,
-    answer: currentQuestion.answer
+    answer: currentQuestion.answer  // El servidor devuelve el índice para opción múltiple
   };
 
   // Verificar si esta pregunta ya fue respondida
