@@ -203,6 +203,14 @@ export class RagController {
     try {
       const { courseId, question, additionalContext, fileId } = req.body;
       
+      console.log("Datos recibidos en el controlador:", {
+        courseId,
+        question,
+        additionalContext: additionalContext || '[no proporcionado]',
+        fileId: fileId || '[no proporcionado]',
+        rawBody: JSON.stringify(req.body)
+      });
+      
       if (!courseId || !question) {
         res.status(400).json({ error: 'Se requiere courseId y question' });
         return;

@@ -187,49 +187,40 @@ export class RagService {
       // Formatear la pregunta incluyendo el ID del curso para contexto
       const formattedQuestion = `[Curso ID: ${courseId}] ${question}`;
       
-      console.log(`Procesando pregunta: "${formattedQuestion}" ${fileId ? `con file_id: ${fileId}` : 'sin file_id'}`);
+      console.log(`Procesando pregunta: "${formattedQuestion}"`);
       
       if (!this.openaiApiKey) {
         throw new Error('No se ha configurado OPENAI_API_KEY en .env');
       }
+      
+      const vectorStoreId = process.env.OPENAI_VECTOR_STORE_ID;
+      if (!vectorStoreId) {
+        throw new Error('OPENAI_VECTOR_STORE_ID no está configurada en el archivo .env');
+      }
 
-      // Estructura del payload para la API
+      // Estructura del payload para la API usando file_search
       const payload: any = {
         model: "gpt-4.1-nano",
-        input: []
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: formattedQuestion
+              }
+            ]
+          }
+        ],
+        tools: [
+          {
+            type: "file_search",
+            vector_store_ids: [vectorStoreId]
+          }
+        ]
       };
       
-      // Crear el mensaje del usuario
-      const userMessage: any = {
-        role: "user",
-        content: []
-      };
-      
-      // Si se proporciona un fileId, agregar el archivo a la consulta
-      if (fileId) {
-        userMessage.content.push({
-          type: "input_file",
-          file_id: fileId
-        });
-      }
-      
-      // Agregar el texto de la pregunta
-      userMessage.content.push({
-        type: "input_text",
-        text: formattedQuestion
-      });
-      
-      // Agregar el mensaje a la entrada
-      payload.input.push(userMessage);
-      
-      // Si no hay un fileId específico, usar file_search con todos los archivos
-      if (!fileId) {
-        // Para entornos node.js, no podemos acceder a localStorage
-        // En lugar de eso, usaremos directamente el fileId pasado como parámetro
-        console.log("No se proporcionó fileId específico para file_search");
-      }
-      
-      console.log("Enviando solicitud a OpenAI:", JSON.stringify(payload, null, 2));
+      console.log("Enviando solicitud a OpenAI con file_search:", JSON.stringify(payload, null, 2));
       
       // Llamar a la API de OpenAI (responses)
       const response = await axios.post(
@@ -333,11 +324,17 @@ export class RagService {
     return document;
   }
 
-  // Método para subir un archivo PDF a OpenAI Files API
-  async uploadPdfToOpenAI(filePath: string, purpose: string = 'user_data'): Promise<any> {
+  // Método para subir un archivo PDF a OpenAI Files API y añadirlo a un Vector Store
+  async uploadPdfToOpenAI(filePath: string, purpose: string = 'assistants'): Promise<any> {
+    let uploadedFile: any = null;
     try {
       if (!this.openaiApiKey) {
         throw new Error('OPENAI_API_KEY no está configurada');
+      }
+      
+      const vectorStoreId = process.env.OPENAI_VECTOR_STORE_ID;
+      if (!vectorStoreId) {
+        throw new Error('OPENAI_VECTOR_STORE_ID no está configurada en el archivo .env');
       }
 
       // Verificar que el archivo existe
@@ -345,26 +342,44 @@ export class RagService {
         throw new Error(`El archivo ${filePath} no existe`);
       }
 
-      // Crear un FormData
+      // 1. Subir el archivo a OpenAI Files
       const form = new FormData();
       form.append('purpose', purpose);
       form.append('file', fs.createReadStream(filePath));
 
-      console.log(`Subiendo archivo a OpenAI con purpose: ${purpose}`);
-
-      // Subir el archivo a OpenAI
-      const response = await axios.post('https://api.openai.com/v1/files', form, {
+      console.log(`Subiendo archivo a OpenAI Files con purpose: ${purpose}`);
+      const uploadResponse = await axios.post('https://api.openai.com/v1/files', form, {
         headers: {
           'Authorization': `Bearer ${this.openaiApiKey}`,
           ...form.getHeaders()
         }
       });
+      uploadedFile = uploadResponse.data;
+      console.log('Archivo subido exitosamente a OpenAI Files:', uploadedFile.id);
+      
+      // 2. Añadir el archivo al Vector Store
+      console.log(`Añadiendo archivo ${uploadedFile.id} al Vector Store ${vectorStoreId}`);
+      await this.createVectorStoreFile(vectorStoreId, uploadedFile.id);
+      console.log('Archivo añadido exitosamente al Vector Store');
 
-      console.log('Archivo subido exitosamente a OpenAI:', response.data.id);
-      return response.data;
+      return uploadedFile; // Devolver la información del archivo subido
+      
     } catch (error: any) {
-      console.error('Error al subir archivo a OpenAI:', error.response?.data || error.message);
-      throw new Error(`Error al subir archivo a OpenAI: ${error.response?.data?.error?.message || error.message}`);
+      console.error('Error en el proceso de subida y asociación a Vector Store:');
+      if (axios.isAxiosError(error)) {
+        console.error('Error Axios:', error.response?.data || error.message);
+      } else {
+        console.error('Error General:', error.message);
+      }
+      
+      // Intentar limpiar si el archivo se subió pero falló la asociación
+      if (uploadedFile && uploadedFile.id) {
+        console.warn(`Intentando eliminar archivo ${uploadedFile.id} debido a error posterior...`);
+        // Opcional: Implementar lógica para eliminar el archivo si es necesario
+        // await this.deleteOpenFile(uploadedFile.id); 
+      }
+      
+      throw new Error(`Error al procesar archivo con OpenAI: ${error.response?.data?.error?.message || error.message}`);
     }
   }
 } 

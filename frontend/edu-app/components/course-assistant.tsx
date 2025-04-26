@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Send, Bot, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,7 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: `¡Hola! Soy el asistente de ${courseTitle}. ¿En qué puedo ayudarte hoy?`,
+      content: `¡Hola! Soy el asistente de ${courseTitle}. Puedo intentar responder tus preguntas basándome en la información disponible en el sistema.`,
       timestamp: new Date()
     }
   ]);
@@ -35,26 +35,19 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
   const [additionalContext, setAdditionalContext] = useState('');
   const [showContextInput, setShowContextInput] = useState(false);
   
-  // Obtener el file_id almacenado para este curso, si existe
-  const [openAIFileId, setOpenAIFileId] = useState<string | null>(null);
-  
+  // Referencia para el contenedor de mensajes
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Efecto para hacer scroll automático hacia abajo
   useEffect(() => {
-    // Recuperar el file_id de OpenAI almacenado para este curso
-    const storedFileId = window.localStorage.getItem(`openai_file_${courseId}`);
-    if (storedFileId) {
-      setOpenAIFileId(storedFileId);
-      // Añadir un mensaje informativo si hay un documento de OpenAI disponible
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'He detectado que este curso tiene un documento PDF subido a OpenAI. Puedes hacerme preguntas sobre su contenido.',
-          timestamp: new Date()
-        }
-      ]);
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.children[0] as HTMLElement; // Acceder al viewport
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
-  }, [courseId]);
-  
+  }, [messages, loading]); // Ejecutar cuando cambien los mensajes o el estado de carga
+
   const handleQuestionSubmit = async () => {
     if (!question.trim() || loading) return;
     
@@ -70,25 +63,32 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
     setLoading(true);
     
     try {
-      // Enviar la pregunta al backend, incluyendo el file_id si existe
-      const response = await ragApi.answerQuestion({
+      // Construir los datos de la petición SIN fileId
+      const requestData: RagQuestion = {
         courseId,
         question: userMessage.content,
-        additionalContext: additionalContext.trim() || undefined,
-        fileId: openAIFileId || undefined
-      });
+        additionalContext: additionalContext.trim() || undefined
+        // Ya no enviamos fileId
+      };
+      
+      console.log("Datos que se enviarán al backend (sin fileId específico):", JSON.stringify(requestData));
+      
+      // Llamar a la API (el backend usará el Vector Store configurado)
+      const response = await ragApi.answerQuestion(requestData);
       
       // Añadir la respuesta a los mensajes
+      // Asegurarse de manejar la estructura de respuesta { text: ..., citations: ... }
+      const responseContent = typeof response === 'object' && response.text ? response.text : response.answer;
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.answer || (typeof response === 'object' ? response.text : String(response)),
+        content: responseContent || String(response), // Fallback por si acaso
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);
       
       // Si hay citas en la respuesta, mostrarlas
-      if (response.citations && response.citations.length > 0) {
+      if (typeof response === 'object' && response.citations && response.citations.length > 0) {
         const citationsMessage: Message = {
           role: 'assistant',
           content: `Fuentes: ${response.citations.map((c: any) => c.filename || c.file_id).join(', ')}`,
@@ -150,7 +150,7 @@ export function CourseAssistant({ courseId, courseTitle }: CourseAssistantProps)
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea className="h-[320px] pr-4">
+        <ScrollArea ref={scrollAreaRef} className="h-[320px] pr-4">
           <div className="space-y-4">
             {messages.map((message, index) => (
               <div 

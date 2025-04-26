@@ -158,7 +158,6 @@ export interface RagQuestion {
   courseId: number;
   question: string;
   additionalContext?: string;
-  fileId?: string;
 }
 
 export interface RagAnswer {
@@ -809,6 +808,8 @@ export const ragApi = {
     try {
       const token = localStorage.getItem('auth_token');
       
+      console.log("Enviando datos al backend:", data);
+      
       const response = await fetch(`${API_URL}/rag/answer`, {
         method: 'POST',
         headers: {
@@ -822,7 +823,9 @@ export const ragApi = {
         throw new Error('Error al generar respuesta');
       }
       
-      return response.json();
+      const responseData = await response.json();
+      console.log("Respuesta del backend:", responseData);
+      return responseData;
     } catch (error) {
       console.error('Error en consulta RAG:', error);
       throw error;

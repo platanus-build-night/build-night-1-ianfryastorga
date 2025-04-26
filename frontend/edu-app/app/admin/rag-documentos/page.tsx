@@ -194,29 +194,41 @@ export default function RagDocumentsPage() {
         try {
           // Usar el nuevo método que procesa PDFs con OpenAI
           const response = await ragApi.processPdfWithOpenAI(formData)
-          console.log("PDF procesado con OpenAI:", response);
+          console.log("PDF procesado con OpenAI - Respuesta completa:", response);
           
           // Guardar el file_id para usarlo en consultas futuras
-          window.localStorage.setItem(`openai_file_${newDocument.course_id}`, response.file_id);
-          
-          toast({
-            title: "Archivo subido a OpenAI",
-            description: `File ID: ${response.file_id}. Este documento puede ser consultado usando la API de OpenAI.`,
-            variant: "success",
-          })
-          
-          // Actualizar inmediatamente el estado después de procesar el archivo
-          setNewDocument(prevState => {
-            const updatedState = {
-              ...prevState,
-              content: `[OpenAI File ID: ${response.file_id}] Este documento fue procesado por OpenAI y está disponible para consultas.`,
-              title: fileTitle || prevState.title,
-              course_id: prevState.course_id // Mantener el course_id actual
-            };
+          if (response && response.file_id) {
+            // Extraer el file_id que viene directamente de la respuesta
+            const fileId = response.file_id;
+            console.log(`Guardando file_id en localStorage: ${fileId} para el curso ${newDocument.course_id}`);
+            window.localStorage.setItem(`openai_file_${newDocument.course_id}`, fileId);
             
-            console.log("Estado actualizado inmediatamente:", updatedState);
-            return updatedState;
-          });
+            // Verificar que se guardó correctamente
+            const storedId = window.localStorage.getItem(`openai_file_${newDocument.course_id}`);
+            console.log(`Verificación - ID almacenado: ${storedId}`);
+            
+            toast({
+              title: "Archivo subido a OpenAI",
+              description: `File ID: ${fileId}. Este documento puede ser consultado usando la API de OpenAI.`,
+              variant: "success",
+            });
+            
+            // Actualizar inmediatamente el estado del documento
+            const contentWithFileId = `[OpenAI File ID: ${fileId}] Este documento fue procesado por OpenAI y está disponible para consultas.`;
+            setNewDocument(prevState => ({
+              ...prevState,
+              content: contentWithFileId,
+              title: fileTitle || prevState.title,
+              course_id: prevState.course_id
+            }));
+          } else {
+            console.error("No se recibió un file_id válido en la respuesta:", response);
+            toast({
+              title: "Advertencia",
+              description: "El archivo se procesó pero no se recibió un ID válido para consultas.",
+              variant: "warning",
+            });
+          }
         } catch (error) {
           // Si falla el procesamiento en el backend, mostrar error
           clearInterval(progressInterval)
