@@ -1,138 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { QuestionCard } from "@/components/question-card"
 import { ChevronLeft, Keyboard } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
-
-// Datos de ejemplo
-const questionsData = {
-  "math-101": {
-    algebra: {
-      1: [
-        {
-          id: "q1",
-          prompt: "¿Qué es una variable en álgebra?",
-          type: "multiple-choice" as const,
-          options: [
-            "Un número específico que nunca cambia",
-            "Un símbolo que representa un valor desconocido",
-            "Una operación matemática",
-            "Un tipo de ecuación",
-          ],
-          answer: "Un símbolo que representa un valor desconocido",
-        },
-        {
-          id: "q2",
-          prompt: "Si x = 5, ¿cuál es el valor de 2x + 3?",
-          type: "text" as const,
-          answer: "13",
-        },
-      ],
-      2: [
-        {
-          id: "q1",
-          prompt: "Resuelve la ecuación: 3x - 7 = 8",
-          type: "text" as const,
-          answer: "5",
-        },
-      ],
-    },
-  },
-  "prog-101": {
-    basics: {
-      1: [
-        {
-          id: "q1",
-          prompt: "¿Cómo se declara una variable en JavaScript?",
-          type: "multiple-choice" as const,
-          options: ["var nombre = valor;", "variable nombre = valor;", "v nombre = valor;", "let nombre: valor;"],
-          answer: "var nombre = valor;",
-        },
-        {
-          id: "q2",
-          prompt: "Escribe un código que declare una constante llamada PI con valor 3.14",
-          type: "code" as const,
-          answer: "const PI = 3.14;",
-        },
-      ],
-    },
-  },
-}
-
-// Datos de teoría
-const theoryData = {
-  "math-101": {
-    algebra: {
-      1: `
-## Variables en Álgebra
-
-Una **variable** es un símbolo (generalmente una letra) que representa un valor desconocido o que puede cambiar.
-
-### Ejemplos:
-- En la expresión $x + 5 = 10$, la variable es $x$.
-- El valor de $x$ en este caso es $5$, porque $5 + 5 = 10$.
-
-### Propiedades:
-1. Las variables pueden tomar diferentes valores.
-2. En una ecuación, buscamos el valor específico que hace que la ecuación sea verdadera.
-3. Las variables se pueden usar para representar patrones y generalizar relaciones.
-      `,
-      2: `
-## Ecuaciones Lineales
-
-Una **ecuación lineal** es una ecuación donde la variable tiene exponente 1.
-
-### Forma general:
-$ax + b = c$, donde $a$, $b$ y $c$ son constantes y $a ≠ 0$.
-
-### Pasos para resolver:
-1. Agrupar términos con la variable en un lado.
-2. Agrupar términos constantes en el otro lado.
-3. Dividir ambos lados por el coeficiente de la variable.
-
-### Ejemplo:
-Para resolver $3x - 7 = 8$:
-1. Sumar 7 a ambos lados: $3x = 15$
-2. Dividir ambos lados por 3: $x = 5$
-      `,
-    },
-  },
-  "prog-101": {
-    basics: {
-      1: `
-## Variables en JavaScript
-
-En JavaScript, las variables son contenedores para almacenar datos.
-
-### Formas de declarar variables:
-\`\`\`javascript
-// Usando var (tradicional)
-var nombre = "Juan";
-
-// Usando let (ES6, recomendado)
-let edad = 25;
-
-// Usando const (para valores que no cambiarán)
-const PI = 3.14;
-\`\`\`
-
-### Tipos de datos:
-- String: \`"Hola mundo"\`
-- Number: \`42\` o \`3.14\`
-- Boolean: \`true\` o \`false\`
-- Object: \`{nombre: "Juan", edad: 25}\`
-- Array: \`[1, 2, 3, 4]\`
-- Null: \`null\`
-- Undefined: \`undefined\`
-      `,
-    },
-  },
-}
+import { useToast } from "@/components/ui/use-toast"
+import { questionApi, Question, QuestionType } from "@/lib/api"
+import { levelApi, Level } from "@/lib/api"
 
 export default function LevelPage({
   params,
@@ -142,15 +19,55 @@ export default function LevelPage({
   const { id: courseId, setId, levelId } = params
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [showTheory, setShowTheory] = useState(true)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [level, setLevel] = useState<Level | null>(null)
+  const [theory, setTheory] = useState<string>("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
-  // Obtener preguntas para este nivel
-  const questions =
-    questionsData[courseId as keyof typeof questionsData]?.[setId as any]?.[Number.parseInt(levelId) as any] || []
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        
+        // Obtener datos del nivel
+        const levelData = await levelApi.getLevel(parseInt(levelId))
+        setLevel(levelData)
+        
+        // Obtener preguntas para este nivel
+        const questionsData = await questionApi.getQuestionsByLevel(parseInt(levelId))
+        setQuestions(questionsData)
+        
+        // TODO: Cuando exista la API para obtener teoría, implementar aquí
+        // Por ahora usamos una teoría de prueba basada en el título del nivel
+        setTheory(`
+## ${levelData.title}
 
-  // Obtener teoría para este nivel
-  const theory =
-    theoryData[courseId as keyof typeof theoryData]?.[setId as any]?.[Number.parseInt(levelId) as any] || ""
+Este es el contenido teórico para este nivel. El contenido real se implementará cuando la API de teoría esté disponible.
+
+### Puntos clave:
+1. Estudia el contenido detenidamente.
+2. Intenta resolver los ejercicios por tu cuenta.
+3. Revisa la teoría si tienes dudas al responder las preguntas.
+        `)
+        
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching level data:", err)
+        setError("No se pudo cargar el nivel. Por favor, inténtalo de nuevo más tarde.")
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los datos del nivel",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [levelId, toast])
 
   const handleQuestionSubmit = (isCorrect: boolean) => {
     if (isCorrect) {
@@ -177,16 +94,49 @@ export default function LevelPage({
     }
   }
 
-  if (!questions.length) {
+  if (loading) {
+    return (
+      <div className="container py-8 flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground">Cargando nivel...</p>
+      </div>
+    )
+  }
+
+  if (error || !level) {
     return (
       <div className="container py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Nivel no encontrado</h1>
+        <p className="mb-4 text-muted-foreground">{error || "No se encontró el nivel solicitado"}</p>
         <Button asChild>
           <Link href={`/course/${courseId}`}>Volver al curso</Link>
         </Button>
       </div>
     )
   }
+
+  if (questions.length === 0) {
+    return (
+      <div className="container py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">{level.title}</h1>
+        <p className="mb-4 text-muted-foreground">Este nivel aún no tiene preguntas disponibles.</p>
+        <Button asChild>
+          <Link href={`/course/${courseId}`}>Volver al curso</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  // Adaptar la pregunta actual al formato esperado por QuestionCard
+  const currentQuestion = questions[currentQuestionIndex];
+  const formattedQuestion = {
+    id: currentQuestion.id.toString(),
+    prompt: currentQuestion.prompt,
+    type: currentQuestion.type as "text" | "multiple-choice" | "code",
+    options: currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? 
+      JSON.parse(currentQuestion.options || '[]') : 
+      undefined,
+    answer: currentQuestion.answer
+  };
 
   return (
     <div className="container py-8">
@@ -213,7 +163,7 @@ export default function LevelPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <QuestionCard question={questions[currentQuestionIndex]} onSubmit={handleQuestionSubmit} />
+          <QuestionCard question={formattedQuestion} onSubmit={handleQuestionSubmit} />
         </div>
 
         <div className="relative">
