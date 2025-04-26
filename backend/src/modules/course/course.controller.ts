@@ -33,9 +33,17 @@ export class CourseController {
   };
 
   getAllCourses = async (req: Request, res: Response): Promise<void> => {
-    const published = req.query.published === 'true';
+    // Solo filtrar por published si está explícitamente definido en la query
+    // undefined significa "todos los cursos" (no filtra)
+    let publishedFilter = undefined;
     
-    const courses = await this.courseService.getAllCourses(published);
+    if (req.query.published === 'true') {
+      publishedFilter = true;
+    } else if (req.query.published === 'false') {
+      publishedFilter = false;
+    }
+    
+    const courses = await this.courseService.getAllCourses(publishedFilter);
     res.status(200).json(courses);
   };
 

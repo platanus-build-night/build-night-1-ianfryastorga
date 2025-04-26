@@ -31,10 +31,10 @@ export class Course {
   })
   difficulty_level: string;
 
-  @Column({ name: 'created_by' })
+  @Column({ name: 'created_by', nullable: true })
   createdById: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
   createdBy: User;
 

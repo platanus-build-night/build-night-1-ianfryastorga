@@ -21,6 +21,31 @@ export interface User {
   name: string;
 }
 
+// Tipos para cursos
+export interface Course {
+  id: number;
+  title: string;
+  description: string;
+  thumbnail_url?: string;
+  color?: string;
+  difficulty_level: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_published: boolean;
+  estimated_duration?: number;
+}
+
+export interface CreateCourseDto {
+  title: string;
+  description: string;
+  thumbnail_url?: string;
+  color?: string;
+  difficulty_level?: string;
+  estimated_duration?: number;
+  is_published?: boolean;
+}
+
 // Función para manejar errores
 const handleApiError = async (response: Response) => {
   if (!response.ok) {
@@ -84,4 +109,78 @@ export const userApi = {
       return null;
     }
   },
+};
+
+// Cursos
+export const courseApi = {
+  // Obtener todos los cursos
+  getAllCourses: async (published?: boolean): Promise<Course[]> => {
+    const queryParams = published !== undefined ? `?published=${published}` : '';
+    const response = await fetch(`${API_URL}/courses${queryParams}`);
+    return handleApiError(response);
+  },
+  
+  // Obtener un curso por ID
+  getCourseById: async (id: number): Promise<Course> => {
+    const response = await fetch(`${API_URL}/courses/${id}`);
+    return handleApiError(response);
+  },
+  
+  // Crear un nuevo curso (requiere autenticación)
+  createCourse: async (courseData: CreateCourseDto): Promise<Course> => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('No estás autenticado');
+    }
+    
+    const response = await fetch(`${API_URL}/courses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(courseData)
+    });
+    
+    return handleApiError(response);
+  },
+  
+  // Actualizar un curso existente (requiere autenticación)
+  updateCourse: async (id: number, courseData: Partial<CreateCourseDto>): Promise<Course> => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('No estás autenticado');
+    }
+    
+    const response = await fetch(`${API_URL}/courses/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(courseData)
+    });
+    
+    return handleApiError(response);
+  },
+  
+  // Eliminar un curso (requiere autenticación)
+  deleteCourse: async (id: number): Promise<void> => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('No estás autenticado');
+    }
+    
+    const response = await fetch(`${API_URL}/courses/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({ error: 'Error al eliminar el curso' }));
+      throw new Error(data.error || 'Error al eliminar el curso');
+    }
+  }
 }; 

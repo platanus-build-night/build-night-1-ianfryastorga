@@ -11,21 +11,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, BookOpen, Save } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Switch } from "@/components/ui/switch"
+import { courseApi, CreateCourseDto } from "@/lib/api"
 
 export default function CreateCourse() {
   const router = useRouter()
   const { toast } = useToast()
-  const [formData, setFormData] = useState({
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState<CreateCourseDto>({
     title: "",
     description: "",
-    language: "english",
-    level: "beginner",
-    duration: "8",
-    isPublished: false,
-    hasCertificate: true,
-    tags: "",
-    thumbnail: "",
-    instructorId: "" // Este valor vendría de la base de datos
+    difficulty_level: "beginner",
+    estimated_duration: 8,
+    is_published: false,
+    thumbnail_url: "",
+    color: "#2065D1"
   })
 
   // Manejar cambios en el formulario
@@ -54,9 +53,9 @@ export default function CreateCourse() {
   }
 
   // Manejar creación de curso
-  const handleCreateCourse = () => {
+  const handleCreateCourse = async () => {
     // Validar campos obligatorios
-    if (!formData.title || !formData.description || !formData.language || !formData.level) {
+    if (!formData.title || !formData.description) {
       toast({
         title: "Campos requeridos",
         description: "Por favor completa todos los campos requeridos",
@@ -66,25 +65,45 @@ export default function CreateCourse() {
     }
 
     // Validar que la duración sea un número válido
-    if (isNaN(Number(formData.duration)) || Number(formData.duration) <= 0) {
-      toast({
-        title: "Valor inválido",
-        description: "La duración debe ser un número positivo",
-        variant: "destructive",
-      })
-      return
+    if (typeof formData.estimated_duration === 'string') {
+      const duration = Number(formData.estimated_duration);
+      if (isNaN(duration) || duration <= 0) {
+        toast({
+          title: "Valor inválido",
+          description: "La duración debe ser un número positivo",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      // Convertir la duración a número
+      formData.estimated_duration = duration;
     }
 
-    // Aquí iría la lógica para crear el curso en la API
+    try {
+      setIsLoading(true)
+      
+      // Enviar petición a la API para crear el curso
+      await courseApi.createCourse(formData)
+      
+      toast({
+        title: "Curso creado",
+        description: `El curso "${formData.title}" ha sido creado correctamente.`,
+        variant: "success",
+      })
 
-    toast({
-      title: "Curso creado",
-      description: `El curso "${formData.title}" ha sido creado correctamente.`,
-      variant: "success",
-    })
-
-    // Redireccionar a la página de cursos
-    router.push("/admin/cursos")
+      // Redireccionar a la página de cursos
+      router.push("/admin/cursos")
+    } catch (error) {
+      console.error("Error al crear curso:", error)
+      toast({
+        title: "Error al crear el curso",
+        description: error instanceof Error ? error.message : "Ha ocurrido un error al crear el curso",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -135,25 +154,12 @@ export default function CreateCourse() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="grid gap-3">
-                <Label htmlFor="language">Idioma *</Label>
-                <Select name="language" value={formData.language} onValueChange={(value) => handleSelectChange("language", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un idioma" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="english">Inglés</SelectItem>
-                    <SelectItem value="spanish">Español</SelectItem>
-                    <SelectItem value="french">Francés</SelectItem>
-                    <SelectItem value="german">Alemán</SelectItem>
-                    <SelectItem value="portuguese">Portugués</SelectItem>
-                    <SelectItem value="italian">Italiano</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-3">
-                <Label htmlFor="level">Nivel *</Label>
-                <Select name="level" value={formData.level} onValueChange={(value) => handleSelectChange("level", value)}>
+                <Label htmlFor="difficulty_level">Nivel de dificultad *</Label>
+                <Select 
+                  name="difficulty_level" 
+                  value={formData.difficulty_level || "beginner"} 
+                  onValueChange={(value) => handleSelectChange("difficulty_level", value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un nivel" />
                   </SelectTrigger>
@@ -161,76 +167,70 @@ export default function CreateCourse() {
                     <SelectItem value="beginner">Principiante</SelectItem>
                     <SelectItem value="intermediate">Intermedio</SelectItem>
                     <SelectItem value="advanced">Avanzado</SelectItem>
-                    <SelectItem value="expert">Experto</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="grid gap-3">
-                <Label htmlFor="duration">Duración (semanas) *</Label>
+                <Label htmlFor="estimated_duration">Duración estimada (semanas) *</Label>
                 <Input
-                  id="duration"
-                  name="duration"
+                  id="estimated_duration"
+                  name="estimated_duration"
                   type="number"
                   placeholder="8"
-                  value={formData.duration}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="grid gap-3">
-                <Label htmlFor="tags">Etiquetas (separadas por comas)</Label>
-                <Input
-                  id="tags"
-                  name="tags"
-                  placeholder="Ej: universidad, idiomas, principiantes"
-                  value={formData.tags}
+                  value={formData.estimated_duration?.toString() || ""}
                   onChange={handleInputChange}
                 />
               </div>
             </div>
 
             <div className="grid gap-3">
-              <Label htmlFor="thumbnail">URL de la imagen del curso</Label>
+              <Label htmlFor="thumbnail_url">URL de la imagen del curso</Label>
               <Input
-                id="thumbnail"
-                name="thumbnail"
+                id="thumbnail_url"
+                name="thumbnail_url"
                 placeholder="https://ejemplo.com/imagen.jpg"
-                value={formData.thumbnail}
+                value={formData.thumbnail_url || ""}
                 onChange={handleInputChange}
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isPublished"
-                  checked={formData.isPublished}
-                  onCheckedChange={(checked) => handleSwitchChange("isPublished", checked)}
+            <div className="grid gap-3">
+              <Label htmlFor="color">Color (código hexadecimal)</Label>
+              <div className="flex gap-3 items-center">
+                <Input
+                  id="color"
+                  name="color"
+                  placeholder="#2065D1"
+                  value={formData.color || ""}
+                  onChange={handleInputChange}
                 />
-                <Label htmlFor="isPublished">Publicar curso inmediatamente</Label>
+                {formData.color && (
+                  <div 
+                    className="w-10 h-10 rounded border" 
+                    style={{ backgroundColor: formData.color }}
+                  />
+                )}
               </div>
+            </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="hasCertificate"
-                  checked={formData.hasCertificate}
-                  onCheckedChange={(checked) => handleSwitchChange("hasCertificate", checked)}
-                />
-                <Label htmlFor="hasCertificate">Incluye certificado de finalización</Label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_published"
+                checked={formData.is_published || false}
+                onCheckedChange={(checked) => handleSwitchChange("is_published", checked)}
+              />
+              <Label htmlFor="is_published">Publicar curso inmediatamente</Label>
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => router.back()}>
+          <Button variant="outline" onClick={() => router.back()} disabled={isLoading}>
             Cancelar
           </Button>
-          <Button onClick={handleCreateCourse}>
+          <Button onClick={handleCreateCourse} disabled={isLoading}>
             <Save className="mr-2 h-4 w-4" />
-            Guardar Curso
+            {isLoading ? "Guardando..." : "Guardar Curso"}
           </Button>
         </CardFooter>
       </Card>

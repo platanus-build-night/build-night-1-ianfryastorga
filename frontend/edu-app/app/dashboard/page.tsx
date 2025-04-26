@@ -10,39 +10,10 @@ import { CalendarDays, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { courseApi, Course } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
-// Datos de ejemplo
-const courses = [
-  {
-    id: "math-101",
-    title: "Matemáticas Básicas",
-    description: "Fundamentos de álgebra, geometría y aritmética",
-    progress: 65,
-    color: "#2065D1",
-  },
-  {
-    id: "prog-101",
-    title: "Introducción a JavaScript",
-    description: "Aprende los fundamentos de la programación con JavaScript",
-    progress: 32,
-    color: "#7928CA",
-  },
-  {
-    id: "science-101",
-    title: "Física Fundamental",
-    description: "Conceptos básicos de física y mecánica",
-    progress: 78,
-    color: "#FF4500",
-  },
-  {
-    id: "lang-101",
-    title: "Inglés Intermedio",
-    description: "Mejora tu nivel de inglés con ejercicios prácticos",
-    progress: 45,
-    color: "#00A86B",
-  },
-]
-
+// Datos de ejemplo para los consejos
 const weeklyTips = [
   {
     id: "tip-1",
@@ -61,20 +32,64 @@ const weeklyTips = [
   },
 ]
 
+// Colores por defecto para los cursos sin color definido
+const defaultColors = [
+  "#2065D1", // Azul
+  "#7928CA", // Morado
+  "#FF4500", // Naranja
+  "#00A86B", // Verde
+  "#E02424", // Rojo
+  "#8B5CF6", // Violeta
+  "#0284C7", // Celeste
+  "#DB2777", // Rosa
+]
+
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const { toast } = useToast()
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
   const [streak, setStreak] = useState(7)
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
 
+  // Cargar cursos desde la API
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true)
+        const fetchedCourses = await courseApi.getAllCourses(true) // Solo cursos publicados
+        
+        // Asignar colores por defecto a los cursos que no tienen
+        const coursesWithColors = fetchedCourses.map((course, index) => ({
+          ...course,
+          color: course.color || defaultColors[index % defaultColors.length]
+        }))
+        
+        setCourses(coursesWithColors)
+      } catch (error) {
+        console.error("Error al cargar cursos:", error)
+        toast({
+          title: "Error al cargar cursos",
+          description: "No se pudieron cargar los cursos. Por favor, intenta de nuevo más tarde.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCourses()
+  }, [toast])
+
   // Verificar autenticación
   useEffect(() => {
-    if (loading) return
+    if (authLoading) return
     
     if (!isAuthenticated) {
       router.push("/login")
     }
-  }, [isAuthenticated, loading, router])
+  }, [isAuthenticated, authLoading, router])
 
   // Calcular días restantes para el examen (ejemplo)
   const examDate = new Date()
@@ -89,8 +104,8 @@ export default function DashboardPage() {
     setCurrentTipIndex((prev) => (prev - 1 + weeklyTips.length) % weeklyTips.length)
   }
 
-  // Mostrar pantalla de carga mientras se verifica la autenticación
-  if (loading) {
+  // Mostrar pantalla de carga mientras se verifica la autenticación o se cargan los cursos
+  if (authLoading || loading) {
     return (
       <div className="container py-8 flex justify-center items-center h-[50vh]">
         <div className="text-center">
@@ -108,18 +123,27 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {courses.map((course) => (
-              <CourseCard
-                key={course.id}
-                id={course.id}
-                title={course.title}
-                description={course.description}
-                progress={course.progress}
-                color={course.color}
-              />
-            ))}
-          </div>
+          {courses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {courses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  id={course.id.toString()} 
+                  title={course.title}
+                  description={course.description}
+                  progress={0} // En una implementación real, esto vendría del progreso del usuario
+                  color={course.color || "#2065D1"}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground mb-4">No hay cursos disponibles en este momento.</p>
+              <Button asChild size="sm">
+                <Link href="/explore">Explorar cursos</Link>
+              </Button>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

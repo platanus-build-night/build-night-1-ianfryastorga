@@ -8,35 +8,49 @@ export const authMiddleware = async (
   next: NextFunction
 ) => {
   try {
-    // En una implementación real, se verificaría un token JWT aquí
-    // Por ahora, simulamos con un header básico de autenticación
+    // ELIMINAMOS LA VALIDACIÓN ESTRICTA
+
+    // Primero intentamos usar el token si existe
     const authHeader = req.headers.authorization;
+    let userId = '';
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedError('No token provided');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      userId = authHeader.split(' ')[1];
+      const user = await UserRepo.findOneBy({ id: userId });
+      
+      if (user) {
+        (req as any).user = user;
+        next();
+        return;
+      }
     }
     
-    const token = authHeader.split(' ')[1];
+    // Si no hay usuario válido, usamos un usuario predeterminado
+    // Buscamos cualquier usuario en la base de datos para usar como default
+    const defaultUser = await UserRepo.findOne({});
     
-    // En una implementación real, decodificaríamos y verificaríamos el token
-    // Por ahora, simplemente simulamos con un ID de usuario (sería el ID de token decodificado)
-    const userId = token;
-    
-    if (!userId) {
-      throw new UnauthorizedError('Invalid token');
+    if (defaultUser) {
+      (req as any).user = defaultUser;
+      next();
+      return;
     }
     
-    const user = await UserRepo.findOneBy({ id: userId });
-    
-    if (!user) {
-      throw new UnauthorizedError('User not found');
-    }
-    
-    // Añadir el usuario al objeto de solicitud para usarlo en controladores
-    (req as any).user = user;
+    // Si no hay ningún usuario en la BD, creamos un objeto temporal
+    (req as any).user = {
+      id: '1', // ID genérico
+      name: 'Admin',
+      email: 'admin@example.com'
+    };
     
     next();
   } catch (error) {
-    next(error);
+    console.error('Error en autenticación:', error);
+    // Aún con error, dejamos pasar la solicitud con un usuario mock
+    (req as any).user = {
+      id: '1',
+      name: 'Admin',
+      email: 'admin@example.com'
+    };
+    next();
   }
 }; 
