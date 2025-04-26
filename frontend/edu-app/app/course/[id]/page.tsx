@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { SetCard } from "@/components/set-card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { CourseAssistant } from "@/components/course-assistant"
 import {
   Card,
   CardContent,
@@ -205,36 +206,43 @@ export default function CoursePage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Conjuntos</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <h2 className="text-xl font-semibold mb-4">Conjuntos</h2>
+            
+            {sets.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">
+                    Este curso aún no tiene conjuntos disponibles.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {sets.map((set) => (
+                  <SetCard
+                    key={set.id}
+                    id={set.id.toString()}
+                    courseId={courseId}
+                    title={set.title}
+                    description={set.description}
+                    levels={(levelsMap[set.id] || []).map(level => ({
+                      id: level.id,
+                      title: level.title,
+                      completed: levelProgressMap[level.id] === 100, // Nivel completado si el progreso es 100%
+                      progress: levelProgressMap[level.id] || 0 // Progreso del nivel según las respuestas
+                    }))}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
           
-          {sets.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-muted-foreground">
-                  Este curso aún no tiene conjuntos disponibles.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {sets.map((set) => (
-                <SetCard
-                  key={set.id}
-                  id={set.id.toString()}
-                  courseId={courseId}
-                  title={set.title}
-                  description={set.description}
-                  levels={(levelsMap[set.id] || []).map(level => ({
-                    id: level.id,
-                    title: level.title,
-                    completed: levelProgressMap[level.id] === 100, // Nivel completado si el progreso es 100%
-                    progress: levelProgressMap[level.id] || 0 // Progreso del nivel según las respuestas
-                  }))}
-                />
-              ))}
-            </div>
-          )}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Asistente AI</h2>
+            <CourseAssistant courseId={parseInt(courseId)} courseTitle={course.title} />
+          </div>
         </div>
       </div>
     </div>

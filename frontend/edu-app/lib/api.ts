@@ -153,6 +153,16 @@ export interface CreateUserAnswerDto {
   time_taken?: number;
 }
 
+// RAG (Retrieval Augmented Generation)
+export interface RagQuestion {
+  courseId: number;
+  question: string;
+}
+
+export interface RagAnswer {
+  answer: string;
+}
+
 // Función para manejar errores
 const handleApiError = async (response: Response) => {
   if (!response.ok) {
@@ -755,4 +765,52 @@ export const userAnswerApi = {
       throw error;
     }
   },
+};
+
+// RAG (Retrieval Augmented Generation)
+export const ragApi = {
+  answerQuestion: async (data: RagQuestion): Promise<RagAnswer> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al generar respuesta');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error en consulta RAG:', error);
+      throw error;
+    }
+  },
+  
+  getCourseContext: async (courseId: number): Promise<{ context: string }> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/rag/context/${courseId}`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener contexto del curso');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error al obtener contexto del curso:', error);
+      throw error;
+    }
+  }
 }; 
